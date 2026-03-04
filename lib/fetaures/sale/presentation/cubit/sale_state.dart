@@ -11,19 +11,19 @@ final class SaleInitial extends SaleState {}
 
 final class SlesDetailsFetchInitial extends SaleState {}
 
-class SaleLoading extends SaleState {}
+// class SaleLoading extends SaleState {}
 
-class SaleSuccess extends SaleState {
-  final SalesResponseEntity response;
+// class SaleSuccess extends SaleState {
+//   final SalesResponseEntity response;
 
-  SaleSuccess({required this.response});
-}
+//   SaleSuccess({required this.response});
+// }
 
-class SaleError extends SaleState {
-  final String error;
+// class SaleError extends SaleState {
+//   final String error;
 
-  SaleError({required this.error});
-}
+//   SaleError({required this.error});
+// }
 
 // class SaleTabChanged extends SaleState {
 //   final int selectedIndex;
@@ -82,4 +82,16 @@ class SalesDetailsFetchSuccess extends SaleState {
   final SalesDetailsByMasterIdResult response;
 
   SalesDetailsFetchSuccess({required this.response});
+}
+
+class OrderSaveLoading extends SaleState {}
+
+class OrderSaveSuccess extends SaleState {
+  final CreateOrderEntity response;
+  OrderSaveSuccess({required this.response});
+}
+
+class OrderSaveError extends SaleState {
+  final String error;
+  OrderSaveError({required this.error});
 }

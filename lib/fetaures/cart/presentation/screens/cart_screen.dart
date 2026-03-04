@@ -1,9 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quickservtablemanagement/core/theme/colors.dart';
+import 'package:quickservtablemanagement/core/widgets/app_toast.dart';
+import 'package:quickservtablemanagement/fetaures/cart/data/models/cart_item_model.dart';
+import 'package:quickservtablemanagement/fetaures/cart/domain/cart_manager.dart';
 import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/cart_item.dart';
+import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/payment_option.dart';
+import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/summary_row.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/order_save_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/sale/presentation/cubit/sale_cubit.dart';
+import 'package:quickservtablemanagement/services/shared_preference_helper.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  final int tableId;
+  final String tableName;
+  const CartScreen({super.key, required this.tableId, required this.tableName});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -11,256 +24,1021 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final ValueNotifier<String> selectedPayment = ValueNotifier<String>('Cash');
+
   final ValueNotifier<double> multiCashAmount = ValueNotifier<double>(0);
+
   final ValueNotifier<double> multiCardAmount = ValueNotifier<double>(0);
+  final SharedPreferenceHelper helper = SharedPreferenceHelper();
 
-  final ValueNotifier<List<_CartUiItem>> items =
-      ValueNotifier<List<_CartUiItem>>([
-        _CartUiItem(name: "Brost 4 Pcs", sub: "2 X 199", qty: 2, price: 398.00),
-        _CartUiItem(name: "Brost 4 Pcs", sub: "2 X 199", qty: 2, price: 398.00),
-        _CartUiItem(name: "Brost 4 Pcs", sub: "2 X 199", qty: 2, price: 398.00),
-        _CartUiItem(name: "Brost 4 Pcs", sub: "2 X 199", qty: 2, price: 398.00),
-      ]);
-
-  double get subTotal {
-    final list = items.value;
-    return list.fold(0.0, (s, e) => s + (e.unitPrice * e.qty));
+  @override
+  void initState() {
+    super.initState();
+    _loadDefaultPayment();
   }
 
-  double get discount => 0.0;
+  /// 🔹 Load default payment from SharedPreferences
+  Future<void> _loadDefaultPayment() async {
+    final int savedPayment = await helper
+        .getPaymentOption(); // 0 = Cash, 1 = Card
 
-  double get tax => 13.0; // UI dummy like screenshot
-
-  double get total => subTotal - discount + tax;
+    if (savedPayment == 0) {
+      selectedPayment.value = 'Cash';
+    } else if (savedPayment == 1) {
+      selectedPayment.value = 'Card';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        titleSpacing: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Cart",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        ),
-      ),
-      body: ValueListenableBuilder<List<_CartUiItem>>(
-        valueListenable: items,
-        builder: (context, list, _) {
-          if (list.isEmpty) {
-            return const Center(child: Text("Your cart is empty"));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            itemCount: list.length,
-            itemBuilder: (context, index) {
-              //final item = list[index];
-              return CartItemRow(
-                index: index + 1,
-
-                onMinus: () {
-                  final newList = List<_CartUiItem>.from(items.value);
-                  final q = newList[index].qty;
-                  if (q > 1) {
-                    newList[index] = newList[index].copyWith(qty: q - 1);
-                    items.value = newList;
-                  }
-                },
-                onPlus: () {
-                  final newList = List<_CartUiItem>.from(items.value);
-                  final q = newList[index].qty;
-                  newList[index] = newList[index].copyWith(qty: q + 1);
-                  items.value = newList;
-                },
-                onDelete: () {
-                  final newList = List<_CartUiItem>.from(items.value);
-                  newList.removeAt(index);
-                  items.value = newList;
-                },
-                productName: 'Product',
-                qty: 2,
-                salesRate: 2,
-                totalPrice: 2,
+      backgroundColor: AppColors.white,
+      appBar: AppBar(title: Text('Cart')),
+      body: SafeArea(
+        child: BlocConsumer<SaleCubit, SaleState>(
+          listener: (context, state) async {
+            if (state is SalesDetailsFetchSuccess) {
+              print('responseFromSales ${state.response}');
+              Navigator.pop(context);
+              //   Navigator.push(
+              //     context,
+              //     MaterialPageRoute(
+              //       builder: (context) => PrintPage(
+              //         pageFrom: 'SalesReport',
+              //         // sales: saleList.first,
+              //         sales: state.response,
+              //       ),
+              //     ),
+              //   );
+              //   // Navigator.pop(context);
+            }
+            if (state is OrderSaveSuccess) {
+              showAnimatedToast(
+                context,
+                message:
+                    'Sale Saved! Invoice: ${state.response.details?.orderNo}',
+                isSuccess: true,
               );
-            },
-          );
-        },
-      ),
-      bottomNavigationBar: ValueListenableBuilder<List<_CartUiItem>>(
-        valueListenable: items,
-        builder: (context, list, _) {
-          if (list.isEmpty) return const SizedBox.shrink();
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(
+              //     content: Text(
+              //       'Sale Saved! Invoice: ${state.response.details?.invoiceNo}',
+              //     ),
+              //     backgroundColor: AppColors.green,
+              //   ),
+              // );
+              CartManager().clearCart();
+              // final branchId = await SharedPreferenceHelper().getBranchId();
+              print('reachedHHHHHHHHHHHHHHHH');
+              // context.read<SaleCubit>().fetchSalesDetailsByMasterId(
+              //   FetchSalesDetailsRequest(
+              //     branchId: branchId,
+              //     SalesMasterId: state.response.details!.salesMasterId
+              //         .toString(),
+              //   ),
+              // );
+            } else if (state is OrderSaveError) {
+              showAnimatedToast(
+                context,
+                message: 'Error: ${state.error}',
+                isSuccess: false,
+              );
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(content: Text('Error: ${state.error}')),
+              // );
+            }
+          },
+          builder: (context, state) {
+            final items = CartManager().cartItems.value;
 
-          return Container(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-            decoration: const BoxDecoration(color: Colors.white),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            if (items.isEmpty) {
+              return const Center(child: Text("Your cart is empty"));
+            }
+
+            return Column(
               children: [
-                // ✅ Summary box (same style)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF4D7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      summaryRow(
-                        "Sub Total :",
-                        "₹ ${subTotal.toStringAsFixed(2)}",
-                      ),
-                      const SizedBox(height: 8),
-                      summaryRow(
-                        "Discount :",
-                        "₹ ${discount.toStringAsFixed(2)}",
-                      ),
-                      const SizedBox(height: 8),
-                      summaryRow("Tax :", "₹ ${tax.toStringAsFixed(2)}"),
-                      const SizedBox(height: 10),
-                      const Divider(height: 8),
-                      const SizedBox(height: 8),
-                      summaryRow(
-                        "Total :",
-                        "₹ ${total.toStringAsFixed(2)}",
-                        isBold: true,
-                        bigValue: true,
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(
+                  child: ValueListenableBuilder<List<CartItem>>(
+                    valueListenable: CartManager().cartItems,
+                    builder: (context, items, _) {
+                      if (items.isEmpty) {
+                        return const Center(child: Text("Your cart is empty"));
+                      }
 
-                const SizedBox(height: 14),
-
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Payment",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                ValueListenableBuilder<String>(
-                  valueListenable: selectedPayment,
-                  builder: (context, payment, _) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              multiCashAmount.value = 0;
-                              multiCardAmount.value = 0;
-                              selectedPayment.value = "Cash";
-                            },
-                            child: PaymentOption(
-                              title: "Cash",
-                              selected: payment == "Cash",
-                              amountText: "₹ 100.00",
-                              icon: Icons.account_balance_wallet_outlined,
-                            ),
-                          ),
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              multiCashAmount.value = 0;
-                              multiCardAmount.value = 0;
-                              selectedPayment.value = "Card";
-                            },
-                            child: PaymentOption(
-                              title: "Card",
-                              selected: payment == "Card",
-                              amountText: "",
-                              icon: Icons.credit_card_outlined,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              final prev = selectedPayment.value;
-                              _showMultiPaymentModal(
-                                context,
-                                total: total,
-                                prevPayment: prev,
-                                onCancel: () => selectedPayment.value = prev,
-                                onOk: () => selectedPayment.value = "Multi",
-                              );
-                            },
-                            child: ValueListenableBuilder<double>(
-                              valueListenable: multiCashAmount,
-                              builder: (context, cash, _) {
-                                return ValueListenableBuilder<double>(
-                                  valueListenable: multiCardAmount,
-                                  builder: (context, card, __) {
-                                    final sub = (cash == 0 && card == 0)
-                                        ? ""
-                                        : "Cash ${cash.toStringAsFixed(0)} | Card ${card.toStringAsFixed(0)}";
-                                    return PaymentOption(
-                                      title: "Multi",
-                                      selected: payment == "Multi",
-                                      amountText: sub,
-                                      icon: Icons.dashboard_customize_outlined,
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 14),
-
-                // ✅ Confirm button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEAB307),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: () {
-                      // UI only
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return CartItemRow(item: item, index: index + 1);
+                        },
+                      );
                     },
-                    child: const Text(
-                      "Confirm Sale",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
                   ),
                 ),
               ],
-            ),
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: ValueListenableBuilder<List<CartItem>>(
+        valueListenable: CartManager().cartItems,
+        builder: (context, cartItems, _) {
+          return FutureBuilder<Map<String, dynamic>>(
+            future: _calculateTotals(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final totals = snapshot.data!;
+              final subTotal = totals['subTotal'] as double;
+              final discount = totals['discount'] as double;
+              final tax = totals['tax'] as double;
+              final total = totals['total'] as double;
+              final vatType = totals['vatType'] as String?;
+
+              return BlocBuilder<SaleCubit, SaleState>(
+                builder: (context, state) {
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Payment summary
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: const Text(
+                            'Payment',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4D7),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              summaryRow(
+                                'Sub Total :',
+                                subTotal.toStringAsFixed(2),
+                              ),
+                              const SizedBox(height: 4),
+                              summaryRow(
+                                'Discount :',
+                                discount.toStringAsFixed(2),
+                              ),
+                              const SizedBox(
+                                height: 4,
+                              ), // Will Show tax label based on vatType
+                              if (tax > 0)
+                                summaryRow(
+                                  '${_getTaxLabel(vatType)} :',
+                                  tax.toStringAsFixed(2),
+                                ),
+                              //summaryRow('Tax :', '₹ ${tax.toStringAsFixed(2)}'),
+                              const Divider(height: 16),
+                              summaryRow(
+                                'Total :',
+                                total.toStringAsFixed(2),
+                                isBold: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Payment Options
+                        ValueListenableBuilder(
+                          valueListenable: selectedPayment,
+                          builder: (context, payment, _) {
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      // ✅ clear multi values when leaving Multi
+                                      multiCashAmount.value = 0;
+                                      multiCardAmount.value = 0;
+                                      selectedPayment.value = 'Cash';
+                                    },
+                                    child: PaymentOption(
+                                      title: 'Cash',
+                                      subtitle: '',
+                                      selected: payment == 'Cash',
+                                      icon: Icons.money,
+                                      amount: payment == 'Cash' ? total : 0,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      // ✅ clear multi values when leaving Multi
+                                      multiCashAmount.value = 0;
+                                      multiCardAmount.value = 0;
+
+                                      selectedPayment.value = 'Card';
+                                    },
+                                    child: PaymentOption(
+                                      title: 'Card',
+                                      subtitle: '',
+                                      selected: payment == 'Card',
+                                      icon: Icons.credit_card,
+                                      amount: payment == 'Card' ? total : 0,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      final prevPayment = selectedPayment.value;
+                                      _showMultiPaymentModal(
+                                        context,
+                                        total: total,
+                                        prevPayment: prevPayment,
+                                        onCancel: () {
+                                          // ✅ go back to previous selection
+                                          selectedPayment.value = prevPayment;
+                                        },
+                                        onOk: () {
+                                          // ✅ set Multi only when user confirms
+                                          selectedPayment.value = 'Multi';
+                                        },
+                                      );
+                                      // selectedPayment.value = 'Multi';
+                                      // _showMultiPaymentModal(
+                                      //   context,
+                                      //   total: total,
+                                      //   prevPayment: prevPayment,
+                                      // );
+                                    },
+                                    child: ValueListenableBuilder(
+                                      valueListenable: multiCashAmount,
+                                      builder: (context, cash, _) {
+                                        return ValueListenableBuilder(
+                                          valueListenable: multiCardAmount,
+                                          builder: (context, card, __) {
+                                            return PaymentOption(
+                                              title: 'Multi',
+                                              subtitle: cash == 0 && card == 0
+                                                  ? ''
+                                                  : 'Cash ${cash.toStringAsFixed(0)} | '
+                                                        'Card ${card.toStringAsFixed(0)}',
+                                              selected: payment == 'Multi',
+                                              icon: Icons
+                                                  .dashboard_customize_outlined,
+                                              amount: cash + card,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Confirm Sale Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: state is OrderSaveLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFEAB307),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () async {
+                                    final nameCtrl = TextEditingController();
+                                    final addressCtrl = TextEditingController();
+                                    final phoneCtrl = TextEditingController();
+
+                                    int selectedCount = 1;
+
+                                    showDialog(
+                                      context: context,
+                                      builder: (dialogCtx) {
+                                        return StatefulBuilder(
+                                          builder: (context, setDialogState) {
+                                            return Dialog(
+                                              backgroundColor: AppColors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                      16,
+                                                      16,
+                                                      16,
+                                                      16,
+                                                    ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Text(
+                                                      "Customer Details",
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+
+                                                    // Customer Name
+                                                    TextField(
+                                                      controller: nameCtrl,
+                                                      decoration: InputDecoration(
+                                                        hintText:
+                                                            "Customer Name",
+                                                        contentPadding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 14,
+                                                            ),
+                                                        filled: true,
+                                                        fillColor:
+                                                            AppColors.white,
+                                                        enabledBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide: BorderSide(
+                                                            color: Colors
+                                                                .grey
+                                                                .shade300, // normal border color
+                                                            width: 1,
+                                                          ),
+                                                        ),
+
+                                                        // 👇 When focused
+                                                        focusedBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide:
+                                                              const BorderSide(
+                                                                color: Color(
+                                                                  0xFFEAB307,
+                                                                ), // yellow when typing
+                                                                width: 2,
+                                                              ),
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 12),
+
+                                                    // Address (Optional)
+                                                    TextField(
+                                                      controller: addressCtrl,
+                                                      decoration: InputDecoration(
+                                                        hintText:
+                                                            "Address (Optional)",
+                                                        contentPadding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 14,
+                                                            ),
+                                                        filled: true,
+                                                        fillColor:
+                                                            AppColors.white,
+                                                        enabledBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide: BorderSide(
+                                                            color: Colors
+                                                                .grey
+                                                                .shade300, // normal border color
+                                                            width: 1,
+                                                          ),
+                                                        ),
+
+                                                        // 👇 When focused
+                                                        focusedBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide:
+                                                              const BorderSide(
+                                                                color: Color(
+                                                                  0xFFEAB307,
+                                                                ), // yellow when typing
+                                                                width: 2,
+                                                              ),
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 12),
+
+                                                    // Phone Number
+                                                    TextField(
+                                                      controller: phoneCtrl,
+                                                      keyboardType:
+                                                          TextInputType.phone,
+                                                      decoration: InputDecoration(
+                                                        hintText:
+                                                            "Phone Number",
+                                                        contentPadding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 14,
+                                                            ),
+                                                        filled: true,
+                                                        fillColor: AppColors
+                                                            .white, // 👇 Normal border
+                                                        enabledBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide: BorderSide(
+                                                            color: Colors
+                                                                .grey
+                                                                .shade300, // normal border color
+                                                            width: 1,
+                                                          ),
+                                                        ),
+
+                                                        // 👇 When focused
+                                                        focusedBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide:
+                                                              const BorderSide(
+                                                                color: Color(
+                                                                  0xFFEAB307,
+                                                                ), // yellow when typing
+                                                                width: 2,
+                                                              ),
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+
+                                                    // 1 2 3 4 5 6 selector
+                                                    Row(
+                                                      children: List.generate(6, (
+                                                        i,
+                                                      ) {
+                                                        final numVal = i + 1;
+                                                        final selected =
+                                                            selectedCount ==
+                                                            numVal;
+
+                                                        return Expanded(
+                                                          child: GestureDetector(
+                                                            onTap: () {
+                                                              setDialogState(() {
+                                                                selectedCount =
+                                                                    numVal;
+                                                              });
+                                                            },
+                                                            child: Container(
+                                                              height: 42,
+                                                              margin:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        3,
+                                                                  ),
+                                                              alignment:
+                                                                  Alignment
+                                                                      .center,
+                                                              decoration: BoxDecoration(
+                                                                color: selected
+                                                                    ? const Color(
+                                                                        0xFFEAB307,
+                                                                      )
+                                                                    : AppColors
+                                                                          .white,
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                                ),
+                                                              ),
+                                                              child: Text(
+                                                                numVal
+                                                                    .toString(),
+                                                                style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color:
+                                                                      selected
+                                                                      ? Colors
+                                                                            .black
+                                                                      : Colors
+                                                                            .black87,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      }),
+                                                    ),
+
+                                                    const SizedBox(height: 22),
+
+                                                    // Confirm Sale button
+                                                    SizedBox(
+                                                      width: double.infinity,
+                                                      height: 48,
+                                                      child: ElevatedButton(
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              const Color(
+                                                                0xFFEAB307,
+                                                              ),
+                                                          foregroundColor:
+                                                              Colors.black,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  10,
+                                                                ),
+                                                          ),
+                                                          elevation: 0,
+                                                        ),
+                                                        onPressed: () async {
+                                                          final payment =
+                                                              selectedPayment
+                                                                  .value;
+
+                                                          double cashAmt = 0;
+                                                          double cardAmt = 0;
+
+                                                          if (payment ==
+                                                              'Cash') {
+                                                            cashAmt = total;
+                                                            cardAmt = 0;
+                                                          } else if (payment ==
+                                                              'Card') {
+                                                            cashAmt = 0;
+                                                            cardAmt = total;
+                                                          } else if (payment ==
+                                                              'Multi') {
+                                                            cashAmt =
+                                                                multiCashAmount
+                                                                    .value;
+                                                            cardAmt =
+                                                                multiCardAmount
+                                                                    .value;
+
+                                                            // safety check (only if user did not press OK or mismatch)
+                                                            if ((cashAmt +
+                                                                        cardAmt -
+                                                                        total)
+                                                                    .abs() >
+                                                                0.01) {
+                                                              ScaffoldMessenger.of(
+                                                                context,
+                                                              ).showSnackBar(
+                                                                const SnackBar(
+                                                                  content: Text(
+                                                                    'Multi payment amount mismatch',
+                                                                  ),
+                                                                ),
+                                                              );
+                                                              return;
+                                                            }
+                                                          } // 🔹 LOAD LEDGERS FROM SHARED PREF
+                                                          final ledgerData =
+                                                              await SharedPreferenceHelper()
+                                                                  .getLedgers();
+
+                                                          final int
+                                                          cashLedgerId =
+                                                              ledgerData['cashLedgerId'] ??
+                                                              0;
+                                                          final int
+                                                          cardLedgerId =
+                                                              ledgerData['cardLedgerId'] ??
+                                                              0;
+
+                                                          final items =
+                                                              CartManager()
+                                                                  .cartItems
+                                                                  .value; // Build OrderSaveParameter from cart
+                                                          final orderRequest = OrderSaveParameter(
+                                                            orderDate:
+                                                                DateTime.now()
+                                                                    .toIso8601String()
+                                                                    .split('T')
+                                                                    .first,
+                                                            orderTime:
+                                                                DateTime.now()
+                                                                    .toIso8601String()
+                                                                    .split('T')
+                                                                    .last
+                                                                    .split('.')
+                                                                    .first,
+                                                            ledgerId: 0,
+                                                            subTotal: subTotal,
+                                                            discountAmount:
+                                                                discount,
+                                                            vatAmount: tax,
+                                                            grandTotal: total,
+                                                            cashLedgerId:
+                                                                cashLedgerId,
+                                                            cashAmount: cashAmt,
+                                                            cardLedgerID:
+                                                                cardLedgerId,
+                                                            cardAmount: cardAmt,
+                                                            creditAmount: 0,
+                                                            billStatus: 'O',
+                                                            tableId:
+                                                                widget.tableId,
+                                                            userId: 1,
+                                                            mergeStatus: 0,
+                                                            mergeId: null,
+                                                            orderType: 'dinein',
+                                                            branchId: 1,
+                                                            customerName:
+                                                                nameCtrl.text
+                                                                    .trim(),
+                                                            address: addressCtrl
+                                                                .text
+                                                                .trim(),
+                                                            phoneNo: phoneCtrl
+                                                                .text
+                                                                .trim(),
+                                                            seatsUsed:
+                                                                selectedCount,
+                                                            remarks: '',
+                                                            salesMasterId: null,
+                                                            createdUser: '',
+                                                            orderDetails: items
+                                                                .map(
+                                                                  (
+                                                                    e,
+                                                                  ) => OrderDetail(
+                                                                    productCode:
+                                                                        e.productCode,
+                                                                    productName:
+                                                                        e.productName,
+                                                                    productDescription:
+                                                                        e.product_description ??
+                                                                        '',
+                                                                    qty: e.qty
+                                                                        .toInt(),
+                                                                    unitId:
+                                                                        int.parse(
+                                                                          e.unitId,
+                                                                        ),
+                                                                    purchaseCost:
+                                                                        double.parse(
+                                                                          e.purchaseCost,
+                                                                        ),
+                                                                    salesRate: e
+                                                                        .salesRate,
+                                                                    excludeRate:
+                                                                        e.salesRate,
+                                                                    subtotal: e
+                                                                        .totalPrice,
+                                                                    vatId: 1,
+                                                                    vatAmount:
+                                                                        tax /
+                                                                        items
+                                                                            .length,
+                                                                    totalAmount:
+                                                                        e.totalPrice +
+                                                                        (tax /
+                                                                            items.length),
+                                                                    groupId: 1,
+                                                                  ),
+                                                                )
+                                                                .toList(),
+                                                          );
+
+                                                          // Trigger order saving in cubit
+                                                          context
+                                                              .read<SaleCubit>()
+                                                              .saveOrder(
+                                                                orderRequest,
+                                                              );
+                                                        },
+
+                                                        // Build SaveSaleRequest from cart
+                                                        // final request = SaveSaleRequest(
+                                                        //   invoiceDate:
+                                                        //       DateTime.now()
+                                                        //           .toIso8601String()
+                                                        //           .split('T')
+                                                        //           .first,
+                                                        //   invoiceTime:
+                                                        //       DateTime.now()
+                                                        //           .toIso8601String()
+                                                        //           .split('T')
+                                                        //           .last
+                                                        //           .split('.')
+                                                        //           .first,
+                                                        //   ledgerId: 0,
+                                                        //   subTotal: subTotal,
+                                                        //   discountAmount:
+                                                        //       discount,
+                                                        //   vatAmount: tax,
+                                                        //   grandTotal: total,
+                                                        //   cashLedgerId:
+                                                        //       cashLedgerId,
+                                                        //   cashAmount: cashAmt,
+                                                        //   cardLedgerId:
+                                                        //       cardLedgerId,
+                                                        //   cardAmount: cardAmt,
+                                                        //   creditAmount: 0,
+                                                        //   tableId: 1,
+                                                        //   supplierId: 1,
+                                                        //   cashierId: 1,
+                                                        //   orderMasterId: 10,
+                                                        //   billStatus: '',
+                                                        //   salesType: '',
+                                                        //   billTokenNo: 22,
+                                                        //   createdUser: 1,
+                                                        //   branchId: 1,
+                                                        //   totalTax: tax,
+                                                        //   salesDetails: items
+                                                        //       .map(
+                                                        //         (
+                                                        //           e,
+                                                        //         ) => SaleDetail(
+                                                        //           productCode:
+                                                        //               e.productCode,
+                                                        //           productName:
+                                                        //               e.productName,
+                                                        //           qty: (e.qty as num)
+                                                        //               .toInt(), // safer
+                                                        //           unitId: double.parse(
+                                                        //             e.unitId,
+                                                        //           ).toInt(),
+                                                        //           purchaseCost:
+                                                        //               double.parse(
+                                                        //                 e.purchaseCost,
+                                                        //               ),
+                                                        //           salesRate: e
+                                                        //               .salesRate,
+                                                        //           excludeRate:
+                                                        //               e.salesRate,
+                                                        //           subtotal: e
+                                                        //               .totalPrice,
+                                                        //           vatId: 1,
+                                                        //           vatAmount:
+                                                        //               tax /
+                                                        //               items
+                                                        //                   .length,
+                                                        //           totalAmount:
+                                                        //               e.totalPrice +
+                                                        //               (tax /
+                                                        //                   items.length),
+                                                        //           conversionRate:
+                                                        //               1,
+                                                        //         ),
+                                                        //       )
+                                                        //       .toList(),
+                                                        // );
+
+                                                        // // Trigger cubit
+                                                        // context
+                                                        //     .read<SaleCubit>()
+                                                        //     .saveSale(
+                                                        //       request,
+                                                        //     );
+                                                        child: const Text(
+                                                          "Confirm Sale",
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
+                                  // onPressed: () async {
+                                  //   final payment = selectedPayment.value;
+
+                                  //   double cashAmt = 0;
+                                  //   double cardAmt = 0;
+
+                                  //   if (payment == 'Cash') {
+                                  //     cashAmt = total;
+                                  //     cardAmt = 0;
+                                  //   } else if (payment == 'Card') {
+                                  //     cashAmt = 0;
+                                  //     cardAmt = total;
+                                  //   } else if (payment == 'Multi') {
+                                  //     cashAmt = multiCashAmount.value;
+                                  //     cardAmt = multiCardAmount.value;
+
+                                  //     // safety check (only if user did not press OK or mismatch)
+                                  //     if ((cashAmt + cardAmt - total).abs() >
+                                  //         0.01) {
+                                  //       ScaffoldMessenger.of(
+                                  //         context,
+                                  //       ).showSnackBar(
+                                  //         const SnackBar(
+                                  //           content: Text(
+                                  //             'Multi payment amount mismatch',
+                                  //           ),
+                                  //         ),
+                                  //       );
+                                  //       return;
+                                  //     }
+                                  //   } // 🔹 LOAD LEDGERS FROM SHARED PREF
+                                  //   final ledgerData =
+                                  //       await SharedPreferenceHelper()
+                                  //           .getLedgers();
+
+                                  //   final int cashLedgerId =
+                                  //       ledgerData['cashLedgerId'] ?? 0;
+                                  //   final int cardLedgerId =
+                                  //       ledgerData['cardLedgerId'] ?? 0;
+
+                                  //   final items =
+                                  //       CartManager().cartItems.value;
+                                  //   // Build SaveSaleRequest from cart
+                                  //   final request = SaveSaleRequest(
+                                  //     invoiceDate: DateTime.now()
+                                  //         .toIso8601String()
+                                  //         .split('T')
+                                  //         .first,
+                                  //     invoiceTime: DateTime.now()
+                                  //         .toIso8601String()
+                                  //         .split('T')
+                                  //         .last
+                                  //         .split('.')
+                                  //         .first,
+                                  //     ledgerId: 0,
+                                  //     subTotal: subTotal,
+                                  //     discountAmount: discount,
+                                  //     vatAmount: tax,
+                                  //     grandTotal: total,
+                                  //     cashLedgerId: cashLedgerId,
+                                  //     cashAmount: cashAmt,
+                                  //     cardLedgerId: cardLedgerId,
+                                  //     cardAmount: cardAmt,
+                                  //     creditAmount: 0,
+                                  //     tableId: 1,
+                                  //     supplierId: 1,
+                                  //     cashierId: 1,
+                                  //     orderMasterId: 10,
+                                  //     billStatus: '',
+                                  //     salesType: '',
+                                  //     billTokenNo: 22,
+                                  //     createdUser: 1,
+                                  //     branchId: 1,
+                                  //     totalTax: tax,
+                                  //     salesDetails: items
+                                  //         .map(
+                                  //           (e) => SaleDetail(
+                                  //             productCode: e.productCode,
+                                  //             productName: e.productName,
+                                  //             qty: (e.qty as num)
+                                  //                 .toInt(), // safer
+                                  //             unitId: double.parse(
+                                  //               e.unitId,
+                                  //             ).toInt(),
+                                  //             purchaseCost: double.parse(
+                                  //               e.purchaseCost,
+                                  //             ),
+                                  //             salesRate: e.salesRate,
+                                  //             excludeRate: e.salesRate,
+                                  //             subtotal: e.totalPrice,
+                                  //             vatId: 1,
+                                  //             vatAmount: tax / items.length,
+                                  //             totalAmount:
+                                  //                 e.totalPrice +
+                                  //                 (tax / items.length),
+                                  //             conversionRate: 1,
+                                  //           ),
+                                  //         )
+                                  //         .toList(),
+                                  //   );
+
+                                  //   // Trigger cubit
+                                  //   context.read<SaleCubit>().saveSale(
+                                  //     request,
+                                  //   );
+                                  // },
+                                  child: const Text(
+                                    'Save Order',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           );
         },
       ),
     );
   }
 
-  // ===== Multi Payment UI bottom sheet (UI only) =====
+  /// 🔹 Get the appropriate tax label based on vatType
+  String _getTaxLabel(String? vatType) {
+    switch (vatType?.toLowerCase()) {
+      case 'tax':
+        return 'Tax';
+      case 'gst':
+        return 'GST';
+      default:
+        return ''; // Default label if null or unknown
+    }
+  }
+
+  /// 🔹 Calculate totals dynamically using VAT settings
+  Future<Map<String, dynamic>> _calculateTotals() async {
+    final items = CartManager().cartItems.value;
+    final subTotal = items.fold(0.0, (sum, item) => sum + item.totalPrice);
+    final discount = 0.0;
+
+    final vatStatus = await SharedPreferenceHelper().getVatStatus();
+    final vatType = await SharedPreferenceHelper().getVatType();
+    double tax = 0.0;
+    if (vatStatus == true) {
+      // Apply 1% tax regardless of tax type (tax or gst)
+      tax = subTotal * 0.01; // 1% tax
+    }
+    final total = subTotal - discount + tax;
+
+    return {
+      'subTotal': subTotal,
+      'discount': discount,
+      'tax': tax,
+      'total': total,
+      'vatType': vatType,
+    };
+  }
+
   void _showMultiPaymentModal(
     BuildContext context, {
     required double total,
@@ -268,47 +1046,62 @@ class _CartScreenState extends State<CartScreen> {
     required VoidCallback onCancel,
     required VoidCallback onOk,
   }) {
-    final bool wasMulti = prevPayment == "Multi";
-
+    // ✅ If user already set Multi before, preload saved values
+    final bool wasMulti = prevPayment == 'Multi';
+    // final double initialCash = prevPayment == 'Cash' ? total : 0;
+    // final double initialCard = prevPayment == 'Card' ? total : 0;
     final double initialCash = wasMulti
         ? multiCashAmount.value
-        : (prevPayment == "Cash" ? total : 0);
+        : (prevPayment == 'Cash' ? total : 0);
 
     final double initialCard = wasMulti
         ? multiCardAmount.value
-        : (prevPayment == "Card" ? total : 0);
+        : (prevPayment == 'Card' ? total : 0);
 
+    // ✅ TEMP values (only commit on OK)
     double tempCash = initialCash;
     double tempCard = initialCard;
 
     final cashCtrl = TextEditingController(
-      text: initialCash == 0 ? "" : initialCash.toStringAsFixed(2),
+      text: initialCash == 0 ? '' : initialCash.toStringAsFixed(2),
     );
     final cardCtrl = TextEditingController(
-      text: initialCard == 0 ? "" : initialCard.toStringAsFixed(2),
+      text: initialCard == 0 ? '' : initialCard.toStringAsFixed(2),
     );
 
     bool isAutoUpdating = false;
     bool closedByButton = false;
-
     double _parse(String v) => double.tryParse(v.trim()) ?? 0;
 
+    // double _clampToTotal(double v) {
+    //   if (v < 0) return 0;
+    //   if (v > total) return total;
+    //   return v;
+    // }
+
     void _setText(TextEditingController c, double value) {
-      final t = value == 0 ? "" : value.toStringAsFixed(2);
+      final t = value == 0 ? '' : value.toStringAsFixed(2);
       c.value = TextEditingValue(
         text: t,
         selection: TextSelection.collapsed(offset: t.length),
       );
     }
 
+    // ✅ INPUT FORMATTER: stop typing if value > total
     TextInputFormatter _maxTotalFormatter(double total) {
       return TextInputFormatter.withFunction((oldValue, newValue) {
         final t = newValue.text.trim();
+
+        // allow empty
         if (t.isEmpty) return newValue;
+
+        // allow just "." while typing
         if (t == ".") return newValue;
 
         final v = double.tryParse(t);
         if (v == null) return oldValue;
+
+        // ❌ reject if exceeds total
         if (v > total) return oldValue;
 
         return newValue;
@@ -324,6 +1117,7 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context) {
         return WillPopScope(
           onWillPop: () async {
+            // ✅ back button behaves like Cancel
             if (!closedByButton) onCancel();
             return true;
           },
@@ -338,21 +1132,23 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Multi Payment",
+                  'Multi Payment',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Total: ₹ ${total.toStringAsFixed(2)}",
+                    'Total: ${total.toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                /// 🔹 Cash row
                 Row(
                   children: [
-                    const SizedBox(width: 140, child: Text("Cash")),
+                    const SizedBox(width: 160, child: Text('Cash')),
                     Expanded(
                       child: TextField(
                         controller: cashCtrl,
@@ -361,12 +1157,12 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d{0,2}$'),
+                            RegExp(r'^\d*\.?\d{0,2}$'), // 2 decimals
                           ),
-                          _maxTotalFormatter(total),
+                          _maxTotalFormatter(total), // ✅ stop if > total
                         ],
                         decoration: InputDecoration(
-                          hintText: "Amount",
+                          hintText: 'Amount',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -378,9 +1174,13 @@ class _CartScreenState extends State<CartScreen> {
                           final cash = _parse(v);
                           final card = total - cash;
 
+                          // ✅ update TEMP only
                           tempCash = cash;
                           tempCard = card;
 
+                          // if ((_parse(v) - cash).abs() > 0.001) {
+                          //   _setText(cashCtrl, cash);
+                          // }
                           _setText(cardCtrl, card);
 
                           isAutoUpdating = false;
@@ -389,10 +1189,13 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 12),
+
+                /// 🔹 Card row
                 Row(
                   children: [
-                    const SizedBox(width: 140, child: Text("Card")),
+                    const SizedBox(width: 160, child: Text('Card')),
                     Expanded(
                       child: TextField(
                         controller: cardCtrl,
@@ -403,10 +1206,10 @@ class _CartScreenState extends State<CartScreen> {
                           FilteringTextInputFormatter.allow(
                             RegExp(r'^\d*\.?\d{0,2}$'),
                           ),
-                          _maxTotalFormatter(total),
+                          _maxTotalFormatter(total), // ✅ stop if > total
                         ],
                         decoration: InputDecoration(
-                          hintText: "Amount",
+                          hintText: 'Amount',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -418,9 +1221,13 @@ class _CartScreenState extends State<CartScreen> {
                           final card = _parse(v);
                           final cash = total - card;
 
+                          // ✅ update TEMP only
                           tempCard = card;
                           tempCash = cash;
 
+                          // if ((_parse(v) - card).abs() > 0.001) {
+                          //   _setText(cardCtrl, card);
+                          // }
                           _setText(cashCtrl, cash);
 
                           isAutoUpdating = false;
@@ -429,7 +1236,9 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+
+                const SizedBox(height: 20),
+
                 Row(
                   children: [
                     Expanded(
@@ -437,9 +1246,10 @@ class _CartScreenState extends State<CartScreen> {
                         onPressed: () {
                           closedByButton = true;
                           onCancel();
+                          // ✅ Cancel = do nothing, just close
                           Navigator.pop(context);
                         },
-                        child: const Text("Cancel"),
+                        child: const Text('Cancel'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -450,13 +1260,22 @@ class _CartScreenState extends State<CartScreen> {
                           foregroundColor: Colors.black,
                         ),
                         onPressed: () {
+                          // ✅ OK = commit values
+                          if ((tempCash + tempCard - total).abs() > 0.01) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Cash + Card must equal Total'),
+                              ),
+                            );
+                            return;
+                          }
                           closedByButton = true;
                           multiCashAmount.value = tempCash;
                           multiCardAmount.value = tempCard;
                           onOk();
                           Navigator.pop(context);
                         },
-                        child: const Text("OK"),
+                        child: const Text('OK'),
                       ),
                     ),
                   ],
@@ -467,121 +1286,8 @@ class _CartScreenState extends State<CartScreen> {
         );
       },
     ).whenComplete(() {
+      // ✅ swipe down / tap outside behaves like Cancel too
       if (!closedByButton) onCancel();
     });
-  }
-}
-
-// =======================
-// UI widgets (UI only)
-// =======================
-
-class _CartUiItem {
-  final String name;
-  final String sub;
-  final int qty;
-  final double price; // optional
-  final double unitPrice;
-
-  _CartUiItem({
-    required this.name,
-    required this.sub,
-    required this.qty,
-    required this.price,
-  }) : unitPrice = _safeUnit(price, qty);
-
-  static double _safeUnit(double total, int qty) {
-    if (qty <= 0) return 0;
-    return total / qty;
-  }
-
-  _CartUiItem copyWith({int? qty}) {
-    final newQty = qty ?? this.qty;
-    final newTotal = unitPrice * newQty;
-    return _CartUiItem(name: name, sub: sub, qty: newQty, price: newTotal);
-  }
-}
-
-/// ✅ summaryRow UI (same look)
-Widget summaryRow(
-  String title,
-  String value, {
-  bool isBold = false,
-  bool bigValue = false,
-}) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-          color: Colors.black87,
-        ),
-      ),
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: bigValue ? 20 : 13,
-          fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
-    ],
-  );
-}
-
-/// ✅ PaymentOption UI (same style like screenshot)
-class PaymentOption extends StatelessWidget {
-  final String title;
-  final bool selected;
-  final String amountText; // can be "", or "₹ 100.00", or "Cash 50 | Card 50"
-  final IconData icon;
-
-  const PaymentOption({
-    super.key,
-    required this.title,
-    required this.selected,
-    required this.amountText,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = selected ? Colors.black : const Color(0xFFF7F7F7);
-    final fg = selected ? Colors.white : Colors.black87;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: fg, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: fg,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            amountText,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: fg,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

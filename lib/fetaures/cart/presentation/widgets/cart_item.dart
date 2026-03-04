@@ -1,32 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:quickservtablemanagement/core/theme/colors.dart';
+import 'package:quickservtablemanagement/fetaures/cart/data/models/cart_item_model.dart';
+import 'package:quickservtablemanagement/fetaures/cart/domain/cart_manager.dart';
 
-/// ✅ UI ONLY version of CartItemRow
-/// - Same UI
-/// - No CartManager
-/// - You pass callbacks from parent
 class CartItemRow extends StatelessWidget {
+  final CartItem item;
   final int index;
-  final String productName;
-  final int qty;
-  final double salesRate;
-  final double totalPrice;
 
-  final VoidCallback? onMinus;
-  final VoidCallback? onPlus;
-  final VoidCallback? onDelete;
-
-  const CartItemRow({
-    super.key,
-    required this.index,
-    required this.productName,
-    required this.qty,
-    required this.salesRate,
-    required this.totalPrice,
-    this.onMinus,
-    this.onPlus,
-    this.onDelete,
-  });
+  const CartItemRow({super.key, required this.item, required this.index});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +24,7 @@ class CartItemRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  productName,
+                  item.productName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -51,7 +32,7 @@ class CartItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$qty x  ${salesRate.toStringAsFixed(2)}',
+                  '${item.qty} x  ${item.salesRate.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],
@@ -70,12 +51,19 @@ class CartItemRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 GestureDetector(
-                  onTap: onMinus,
+                  onTap: () {
+                    final currentQty = (item.qty as num).toDouble();
+
+                    // ✅ stop at 1 (do not decrement to 0)
+                    if (currentQty <= 1) return;
+
+                    CartManager().decrementQuantity(item.productCode);
+                  },
                   child: const Icon(Icons.remove, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  qty.toString().padLeft(2, '0'),
+                  item.qty.toString().padLeft(2, '0'),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -83,7 +71,8 @@ class CartItemRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: onPlus,
+                  onTap: () =>
+                      CartManager().incrementQuantity(item.productCode),
                   child: const Icon(Icons.add, size: 18),
                 ),
               ],
@@ -91,12 +80,12 @@ class CartItemRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            totalPrice.toStringAsFixed(2),
+            item.totalPrice.toStringAsFixed(2),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: onDelete,
+            onTap: () => CartManager().removeFromCart(item.productCode),
             child: const Icon(Icons.close, color: AppColors.red, size: 20),
           ),
         ],

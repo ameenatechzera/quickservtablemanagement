@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:quickservtablemanagement/core/theme/colors.dart';
-import 'package:quickservtablemanagement/fetaures/authentication/domain/parameters/register_server_params.dart';
-import 'package:quickservtablemanagement/fetaures/authentication/presentation/cubit/registercubit/register_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/cart/data/models/cart_item_model.dart';
 import 'package:quickservtablemanagement/fetaures/cart/domain/cart_manager.dart';
 import 'package:quickservtablemanagement/fetaures/categories/presentation/cubit/categories_cubit.dart';
@@ -18,13 +16,13 @@ import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/cate
 import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/custom_searchicon.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/product_dialog_content.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/scroll_supportings.dart';
-import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/tabs.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/top_price_container.dart';
 import 'package:quickservtablemanagement/services/shared_preference_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SaleScreen extends StatefulWidget {
-  const SaleScreen({super.key});
+  final int tableId;
+  final String tableName;
+  const SaleScreen({super.key, required this.tableId, required this.tableName});
 
   @override
   State<SaleScreen> createState() => _SaleScreenState();
@@ -33,10 +31,15 @@ class SaleScreen extends StatefulWidget {
 class _SaleScreenState extends State<SaleScreen>
     with SingleTickerProviderStateMixin {
   late final CartManager cartManager;
-  int _previousTabIndex = 0;
+  // ✅ Make these ValueNotifiers part of the widget state
+  late final ValueNotifier<bool> showCartBar;
+  late final ValueNotifier<bool> _dragHandleVisible;
+  late final ValueNotifier<int> _itemTapBehavior;
+
+  //int _previousTabIndex = 0;
 
   /// ✅ SIMPLE ValueNotifier for top tabs (Dine-In, Takeaway, Delivery)
-  final ValueNotifier<int> selectedSaleTab = ValueNotifier<int>(0);
+  // final ValueNotifier<int> selectedSaleTab = ValueNotifier<int>(0);
 
   // Add this: Current tab index (0: Sales, 1: Dashboard, 2: Settings)
   int _currentTabIndex = 0;
@@ -64,10 +67,10 @@ class _SaleScreenState extends State<SaleScreen>
   final SharedPreferenceHelper helper = SharedPreferenceHelper();
   // For drag handle visibility
   //bool _showDragHandle = true;
-  final ValueNotifier<bool> _dragHandleVisible = ValueNotifier<bool>(true);
+  ////final ValueNotifier<bool> _dragHandleVisible = ValueNotifier<bool>(true);
   // ✅ LIVE setting value
-  int _itemTapBehavior = 1;
-  late final VoidCallback _itemTapListener;
+  //int _itemTapBehavior = 1;
+  //late final VoidCallback _itemTapListener;
   final ScrollController _categoryScrollController = ScrollController();
   bool _didAutoScrollForCart = false;
 
@@ -118,20 +121,28 @@ class _SaleScreenState extends State<SaleScreen>
     super
         .initState(); // ✅ Reset global status bar when entering Home (fix after login/splash)
     // ✅ Show expiry warning once per day when <= 7 days remaining
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndShowExpiryWarningOnceDaily();
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _checkAndShowExpiryWarningOnceDaily();
+    // });
     // ✅ LIVE LISTENER: updates instantly after SAVE
-    _itemTapListener = () {
-      if (!mounted) return;
-      setState(() {
-        _itemTapBehavior = itemTapBehaviorNotifier.value;
-      });
-    };
-    itemTapBehaviorNotifier.addListener(_itemTapListener);
+    // ✅ Initialize ValueNotifiers in initState
+    showCartBar = ValueNotifier<bool>(false);
+    _dragHandleVisible = ValueNotifier<bool>(true);
+    _itemTapBehavior = ValueNotifier<int>(1);
 
-    // ✅ Load initial saved value (also syncs notifier)
-    helper.getItemTapBehavior();
+    // ✅ Load saved item tap behavior
+    _loadItemTapBehavior();
+
+    // _itemTapListener = () {
+    //   if (!mounted) return;
+    //   setState(() {
+    //     _itemTapBehavior = itemTapBehaviorNotifier.value;
+    //   });
+    // };
+    // itemTapBehaviorNotifier.addListener(_itemTapListener);
+
+    // // ✅ Load initial saved value (also syncs notifier)
+    // helper.getItemTapBehavior();
     // Initialize menu animation controller
     _menuAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -154,6 +165,7 @@ class _SaleScreenState extends State<SaleScreen>
 
     // ✅ Load initial data ONCE (avoid calling inside build)
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<ProductCubit>().loadProductsFromLocal();
       context
           .read<CategoriesCubit>()
@@ -163,8 +175,16 @@ class _SaleScreenState extends State<SaleScreen>
       _menuAnimationController.forward();
     });
     _searchController.addListener(() {
+      if (!mounted) return;
       context.read<SaleCubit>().updateSearchQuery(_searchController.text);
     });
+  }
+
+  Future<void> _loadItemTapBehavior() async {
+    final behavior = await helper.getItemTapBehavior();
+    if (mounted) {
+      _itemTapBehavior.value = behavior;
+    }
   }
 
   @override
@@ -175,10 +195,10 @@ class _SaleScreenState extends State<SaleScreen>
 
   @override
   void dispose() {
-    itemTapBehaviorNotifier.removeListener(_itemTapListener);
-
+    //itemTapBehaviorNotifier.removeListener(_itemTapListener);
+    _itemTapBehavior.dispose();
     // Dispose all ValueNotifiers
-    selectedSaleTab.dispose();
+    // selectedSaleTab.dispose();
     showCartBar.dispose();
     _dragHandleVisible.dispose();
     // Dispose animation controller
@@ -187,91 +207,91 @@ class _SaleScreenState extends State<SaleScreen>
     super.dispose();
   }
 
-  Future<void> _checkAndShowExpiryWarningOnceDaily() async {
-    print('reached _checkAndShowExpiryWarningOnceDaily');
-    try {
-      final prefs = await SharedPreferences.getInstance();
+  // Future<void> _checkAndShowExpiryWarningOnceDaily() async {
+  //   print('reached _checkAndShowExpiryWarningOnceDaily');
+  //   try {
+  //     final prefs = await SharedPreferences.getInstance();
 
-      ///  CALL REGISTER API ONCE PER DAY
+  //     ///  CALL REGISTER API ONCE PER DAY
 
-      final today = DateTime.now();
-      final todayKey =
-          "${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+  //     final today = DateTime.now();
+  //     final todayKey =
+  //         "${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
-      final lastApiCall = prefs.getString('subscription_api_last_called');
+  //     final lastApiCall = prefs.getString('subscription_api_last_called');
 
-      if (lastApiCall != todayKey) {
-        final code = await SharedPreferenceHelper().getSubscriptionCode();
+  //     if (lastApiCall != todayKey) {
+  //       final code = await SharedPreferenceHelper().getSubscriptionCode();
 
-        if (code.isNotEmpty) {
-          await context.read<RegisterCubit>().registerServer(
-            RegisterServerRequest(slno: code),
-          );
-        }
+  //       if (code.isNotEmpty) {
+  //         await context.read<RegisterCubit>().registerServer(
+  //           RegisterServerRequest(slno: code),
+  //         );
+  //       }
 
-        await prefs.setString('subscription_api_last_called', todayKey);
-      }
+  //       await prefs.setString('subscription_api_last_called', todayKey);
+  //     }
 
-      // ✅ Get expiry from your SharedPreferenceHelper
-      final expiryString = await SharedPreferenceHelper().getExpiryDate();
+  //     // ✅ Get expiry from your SharedPreferenceHelper
+  //     final expiryString = await SharedPreferenceHelper().getExpiryDate();
 
-      // If no expiry stored, do nothing (or you can treat as expired)
-      if (expiryString.isEmpty || expiryString.trim().isEmpty) return;
+  //     // If no expiry stored, do nothing (or you can treat as expired)
+  //     if (expiryString.isEmpty || expiryString.trim().isEmpty) return;
 
-      final expiry = DateTime.parse(expiryString);
+  //     final expiry = DateTime.parse(expiryString);
 
-      // Compare date-only (ignore time)
-      final todayDate = DateTime(today.year, today.month, today.day);
+  //     // Compare date-only (ignore time)
+  //     final todayDate = DateTime(today.year, today.month, today.day);
 
-      final expDate = DateTime(expiry.year, expiry.month, expiry.day);
+  //     final expDate = DateTime(expiry.year, expiry.month, expiry.day);
 
-      final daysLeft = expDate.difference(todayDate).inDays;
+  //     final daysLeft = expDate.difference(todayDate).inDays;
 
-      // ✅ Show only when within 7 days before expiry (1..7)
-      if (daysLeft < 1 || daysLeft > 7) return;
+  //     // ✅ Show only when within 7 days before expiry (1..7)
+  //     if (daysLeft < 1 || daysLeft > 7) return;
 
-      // ✅ "Once per day" guard using SharedPreferences
-      final lastShown = prefs.getString(
-        'expiry_warning_last_shown',
-      ); // yyyy-mm-dd
+  //     // ✅ "Once per day" guard using SharedPreferences
+  //     final lastShown = prefs.getString(
+  //       'expiry_warning_last_shown',
+  //     ); // yyyy-mm-dd
 
-      if (lastShown == todayKey) return; // already shown today
+  //     if (lastShown == todayKey) return; // already shown today
 
-      await prefs.setString('expiry_warning_last_shown', todayKey);
+  //     await prefs.setString('expiry_warning_last_shown', todayKey);
 
-      if (!mounted) return;
-      _showExpirySoonDialog(daysLeft: daysLeft, expiryDate: expDate);
-    } catch (e) {
-      debugPrint("Expiry check error: $e");
-    }
-  }
+  //     if (!mounted) return;
+  //     _showExpirySoonDialog(daysLeft: daysLeft, expiryDate: expDate);
+  //   } catch (e) {
+  //     debugPrint("Expiry check error: $e");
+  //   }
+  // }
 
-  void _showExpirySoonDialog({
-    required int daysLeft,
-    required DateTime expiryDate,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning, color: Color(0xFFFFC107)),
-            Text("Subscription Expiring "),
-          ],
-        ),
-        content: Text(
-          "Your subscription will expire in $daysLeft day(s).\n\nPlease renew to avoid interruption.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showExpirySoonDialog({
+  //   required int daysLeft,
+  //   required DateTime expiryDate,
+  // }) {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (_) => AlertDialog(
+  //       title: Row(
+  //         children: [
+  //           Icon(Icons.warning, color: Color(0xFFFFC107)),
+  //           Text("Subscription Expiring "),
+  //         ],
+  //       ),
+  //       content: Text(
+  //         "Your subscription will expire in $daysLeft day(s).\n\nPlease renew to avoid interruption.",
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text("OK"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Method to filter products based on search query - PRODUCT NAME ONLY
   List<FetchProductDetails> _searchProducts(
@@ -316,7 +336,7 @@ class _SaleScreenState extends State<SaleScreen>
 
   // ✅ Main behavior based on settings
   void _handleGridTap(FetchProductDetails product) {
-    if (_itemTapBehavior == 2) {
+    if (_itemTapBehavior.value == 2) {
       showProductDialog(context, product, cartManager);
       return;
     }
@@ -356,33 +376,35 @@ class _SaleScreenState extends State<SaleScreen>
     }
   }
 
-  // Added this method to handle tab switching
-  void _switchTab(int index) {
-    setState(() {
-      _previousTabIndex = _currentTabIndex;
-      _currentTabIndex = index;
-      // Reset search and menu mode when switching away from Sales tab
-      if (index != 0) {
-        final saleCubit = context.read<SaleCubit>();
-        saleCubit.hideSearchBar();
-        saleCubit.disableMenuMode();
-        _searchController.clear();
-        saleCubit.clearSearchQuery();
-        saleCubit.resetCategory();
-      } else {
-        // ✅ When coming back to Home, show cartbar if cart has items
-        showCartBar.value = cartManager.cartItems.value.isNotEmpty;
-      }
-    });
-  }
+  // // Added this method to handle tab switching
+  // void _switchTab(int index) {
+  //   setState(() {
+  //     _previousTabIndex = _currentTabIndex;
+  //     _currentTabIndex = index;
+  //     // Reset search and menu mode when switching away from Sales tab
+  //     if (index != 0) {
+  //       final saleCubit = context.read<SaleCubit>();
+  //       saleCubit.hideSearchBar();
+  //       saleCubit.disableMenuMode();
+  //       _searchController.clear();
+  //       saleCubit.clearSearchQuery();
+  //       saleCubit.resetCategory();
+  //     } else {
+  //       // ✅ When coming back to Home, show cartbar if cart has items
+  //       showCartBar.value = cartManager.cartItems.value.isNotEmpty;
+  //     }
+  //   });
+  // }
 
   // Method to handle menu toggle with fade animation
   void _toggleMenuModeWithAnimation() {
+    if (!mounted) return;
     final saleCubit = context.read<SaleCubit>();
     final wasMenuMode = saleCubit.isMenuMode;
 
     // Start fade out animation
     _menuAnimationController.reverse().then((_) {
+      if (!mounted) return;
       // Toggle menu mode
       saleCubit.toggleMenuMode();
 
@@ -663,42 +685,42 @@ class _SaleScreenState extends State<SaleScreen>
   Widget _buildSalesContent() {
     return Column(
       children: [
-        // Top Tabs
-        Container(
-          height: 40,
-          color: const Color(0xFFFFE38A),
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: ValueListenableBuilder<int>(
-              valueListenable: selectedSaleTab,
-              builder: (context, selectedIndex, _) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    buildTab(
-                      context,
-                      "Dine-In",
-                      selectedIndex == 0,
-                      () => selectedSaleTab.value = 0,
-                    ),
-                    buildTab(
-                      context,
-                      "Takeaway",
-                      selectedIndex == 1,
-                      () => selectedSaleTab.value = 1,
-                    ),
-                    buildTab(
-                      context,
-                      "Delivery",
-                      selectedIndex == 2,
-                      () => selectedSaleTab.value = 2,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
+        // // Top Tabs
+        // Container(
+        //   height: 40,
+        //   color: const Color(0xFFFFE38A),
+        //   child: Padding(
+        //     padding: const EdgeInsets.all(5),
+        //     child: ValueListenableBuilder<int>(
+        //       valueListenable: selectedSaleTab,
+        //       builder: (context, selectedIndex, _) {
+        //         return Row(
+        //           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //           children: [
+        //             buildTab(
+        //               context,
+        //               "Dine-In",
+        //               selectedIndex == 0,
+        //               () => selectedSaleTab.value = 0,
+        //             ),
+        //             buildTab(
+        //               context,
+        //               "Takeaway",
+        //               selectedIndex == 1,
+        //               () => selectedSaleTab.value = 1,
+        //             ),
+        //             buildTab(
+        //               context,
+        //               "Delivery",
+        //               selectedIndex == 2,
+        //               () => selectedSaleTab.value = 2,
+        //             ),
+        //           ],
+        //         );
+        //       },
+        //     ),
+        //   ),
+        // ),
 
         // Top row (menu/search/close) – same row works for both modes
         Padding(
@@ -2313,7 +2335,23 @@ class _SaleScreenState extends State<SaleScreen>
       behavior: const AppScrollBehavior(),
       child: Scaffold(
         // backgroundColor: AppColors.theme,
-        // appBar: AppBar(toolbarHeight: 20, backgroundColor: AppColors.theme),
+        appBar: AppBar(
+          // toolbarHeight: 20,
+          backgroundColor: AppColors.theme,
+          elevation: 0,
+          title: const Text(
+            "Sales",
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: BlocListener<ProductCubit, ProductsState>(
@@ -2324,17 +2362,6 @@ class _SaleScreenState extends State<SaleScreen>
             },
             child: Stack(
               children: [
-                // ADD THIS - App bar that stays during transition
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 40,
-                  // MediaQuery.of(context).padding.top + 40, // App bar height
-                  child: Container(
-                    color: AppColors.theme, // Same as your screen color
-                  ),
-                ),
                 _buildSalesContent(),
                 // AnimatedSwitcher(
                 //   duration: const Duration(milliseconds: 320),
@@ -2417,7 +2444,11 @@ class _SaleScreenState extends State<SaleScreen>
                         child: MediaQuery.removeViewInsets(
                           context: context,
                           removeBottom: true,
-                          child: cartBottomBar(context),
+                          child: cartBottomBar(
+                            context,
+                            tableId: widget.tableId,
+                            tableName: widget.tableName,
+                          ),
                         ),
                       );
                     },

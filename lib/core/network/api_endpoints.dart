@@ -233,4 +233,29 @@ class ApiConstants {
   static String savePaymentVoucherPath(String baseUrl) {
     return '$baseUrl/payment-voucher/save-payment-voucher';
   }
+
+  //forfetchingtables
+  static String getTablesPath(String baseUrl) {
+    return '$baseUrl/table/all-tables/1';
+  }
+
+  //forfetchingrunningtables
+  static String getRunningTablesPath(String baseUrl) {
+    return '$baseUrl/table/all-runningtables/1';
+  }
+
+  //forordersaving
+  static String getSaveOrderPath(String baseUrl) {
+    return '$baseUrl/ordermaster/save-ordermaster';
+  }
+
+  //forfetchingalltables
+  static String getAllTablesPath(String baseUrl) {
+    return '$baseUrl/table/all-table-running-compained/1';
+  }
+
+  //forfetchingalltables
+  static String getfetchOrderMasterPath(String baseUrl) {
+    return '$baseUrl/ordermaster/get-ordermaster';
+  }
 }

@@ -5,7 +5,11 @@ import 'package:quickservtablemanagement/fetaures/cart/presentation/screens/cart
 
 /// 🔑 Controls cart bottom bar visibility
 final ValueNotifier<bool> showCartBar = ValueNotifier(false);
-Widget cartBottomBar(BuildContext context) {
+Widget cartBottomBar(
+  BuildContext context, {
+  required int tableId,
+  required String tableName,
+}) {
   return MediaQuery(
     data: MediaQuery.of(context).copyWith(
       textScaleFactor: 1.0, // 🔑 LOCK font scaling
@@ -79,7 +83,10 @@ Widget cartBottomBar(BuildContext context) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) {
-                        return CartScreen();
+                        return CartScreen(
+                          tableId: tableId,
+                          tableName: tableName,
+                        );
                       },
                     ),
                   );

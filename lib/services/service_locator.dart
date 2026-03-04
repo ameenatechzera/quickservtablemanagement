@@ -20,6 +20,11 @@ import 'package:quickservtablemanagement/fetaures/groups/data/repositories/group
 import 'package:quickservtablemanagement/fetaures/groups/domain/repositories/group_repository.dart';
 import 'package:quickservtablemanagement/fetaures/groups/domain/usecases/fetch_group_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/groups/presentation/cubit/group_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/datasources/ordermaster_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/repositories/ordermaster_repository_impl.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/repositories/ordermaster_repository.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_ordermaster_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/datasources/product_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/repositories/product_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/repositories/product_repository_local_impl.dart';
@@ -29,8 +34,18 @@ import 'package:quickservtablemanagement/fetaures/products/domain/usecases/fetch
 import 'package:quickservtablemanagement/fetaures/products/domain/usecases/get_products_bycategory_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/products/domain/usecases/get_products_bygroup_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/products/presentation/cubit/products_cubit.dart';
-import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/save_sale_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/sale/data/datasources/order_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/sale/data/repositories/orders_repository_impl.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/repositories/orders_repository.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/sales_detailsbymasterid_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/save_order_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/cubit/sale_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/data/datasources/salesreport_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/data/repositories/salesreport_repository_impl.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/domain/repositories/salesreport_repository.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/domain/usecases/sales_masterreport_bydate_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/domain/usecases/salesreport_fromserver_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/presentation/cubit/salereport_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/settings/data/datasources/settings_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/settings/data/repositories/settings_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/settings/domain/repositories/settings_repository.dart';
@@ -38,6 +53,13 @@ import 'package:quickservtablemanagement/fetaures/settings/domain/usecases/fetch
 import 'package:quickservtablemanagement/fetaures/settings/domain/usecases/fetch_settings_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/settings/domain/usecases/update_salestoken_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/settings/presentation/cubit/settings_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/data/datasources/table_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/data/repositories/tables_repository_impl.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/repositories/tables_repository.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_alltable_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_runningtable_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_table_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/unit/data/datasources/units_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/unit/data/repositories/unit_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/unit/domain/repositories/units_repository.dart';
@@ -226,20 +248,95 @@ class ServiceLocator {
     );
     sl.registerLazySingleton(() => GetLocalCategoriesUseCase(sl()));
     //   // ------------------- SALES -------------------
-    //   sl.registerFactory(
-    //     () => SaleCubit(
-    //       saveSaleUseCase: sl(),
-    //       salesRepository: sl(),
-    //       // salesDetailsByMasterIdUseCase: sl(),
-    //     ),
-    //   );
-    //   sl.registerLazySingleton(() => SaveSaleUseCase(sl()));
-    //   sl.registerLazySingleton<SalesRemoteDataSource>(
-    //     () => SalesRemoteDataSourceImpl(),
-    //   );
-    //   sl.registerLazySingleton<SalesRepository>(
-    //     () => SalesRepositoryImpl(remoteDataSource: sl()),
-    //   );
-    // }
+    sl.registerFactory(
+      () => SaleCubit(
+        // saveSaleUseCase: sl(),
+        // salesRepository: sl(),
+        salesDetailsByMasterIdUseCase: sl(),
+        saveOrderUseCase: sl(),
+      ),
+    );
+    // sl.registerLazySingleton(() => SaveSaleUseCase(sl()));
+    sl.registerLazySingleton(() => SaveOrderUseCase(sl()));
+
+    //sl.registerLazySingleton(() => SalesDetailsByMasterIdUseCase(sl()));
+
+    // sl.registerLazySingleton<SalesRemoteDataSource>(
+    //   () => SalesRemoteDataSourceImpl(),
+    // );
+    // sl.registerLazySingleton<SalesRepository>(
+    //   () => SalesRepositoryImpl(remoteDataSource: sl()),
+    // );
+    sl.registerLazySingleton<OrdersRemoteDataSource>(
+      () => OrdersRemoteDataSourceImpl(),
+    );
+    sl.registerLazySingleton<OrdersRepository>(
+      () => OrdersRepositoryImpl(remoteDataSource: sl()),
+    );
+    // Cubit
+    sl.registerFactory(
+      () => SalesReportCubit(
+        salesReportFromServerUseCase: sl(),
+        salesDetailsByMasterIdUseCase: sl(),
+        salesReportMasterByDateUseCase: sl(),
+        //deleteSalesFromServerUseCase: sl(),
+      ),
+    );
+    // UseCase
+    sl.registerLazySingleton(() => SalesReportFromServerUseCase(sl()));
+    sl.registerLazySingleton(() => SalesDetailsByMasterIdUseCase(sl()));
+    sl.registerLazySingleton(() => SalesReportMasterByDateUseCase(sl()));
+    //sl.registerLazySingleton(() => DeleteSalesFromServerUseCase(sl()));
+
+    // Data Source
+    sl.registerLazySingleton<SalesReportRemoteDataSource>(
+      () => SalesReportRemoteDataSourceImpl(),
+    );
+    // Repository
+    sl.registerLazySingleton<SalesReportRepository>(
+      () => SalesReportRepositoryImpl(remoteDataSource: sl()),
+    );
+    // ------------------- TABLES -------------------
+
+    // Cubit
+    sl.registerFactory(
+      () => TableCubit(
+        fetchTablesUseCase: sl(),
+        fetchRunningTablesUseCase: sl(),
+        fetchAllTablesUseCase: sl(),
+      ),
+    );
+
+    // UseCase
+    sl.registerLazySingleton(() => FetchTablesUseCase(sl()));
+    sl.registerLazySingleton(() => FetchRunningTablesUseCase(sl()));
+    sl.registerLazySingleton(() => FetchAllTablesUseCase(sl()));
+
+    // Data Source
+    sl.registerLazySingleton<TablesRemoteDataSource>(
+      () => TablesRemoteDataSourceImpl(),
+    );
+
+    // Repository
+    sl.registerLazySingleton<TablesRepository>(
+      () => TablesRepositoryImpl(remoteDataSource: sl()),
+    );
+    // ------------------- ORDER MASTER -------------------
+
+    // Cubit
+    sl.registerFactory(() => OrderMasterCubit(fetchOrderMasterUseCase: sl()));
+
+    // UseCase
+    sl.registerLazySingleton(() => FetchOrderMasterUseCase(sl()));
+
+    // Data Source
+    sl.registerLazySingleton<OrderMasterRemoteDataSource>(
+      () => OrderMasterRemoteDataSourceImpl(),
+    );
+
+    // Repository
+    sl.registerLazySingleton<OrderMasterRepository>(
+      () => OrderMasterRepositoryImpl(remoteDataSource: sl()),
+    );
   }
 }

@@ -1,16 +1,20 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/entities/order_save_entity.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/entities/sale_details_bymasterid_entity.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/entities/sale_save_response_entity.dart';
-import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/sale_save_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/order_save_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/sales_details_request_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/repositories/sale_repository.dart';
-import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/save_sale_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/sales_detailsbymasterid_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/save_order_usecase.dart';
 
 part 'sale_state.dart';
 
 class SaleCubit extends Cubit<SaleState> {
-  final SaveSaleUseCase _saveSaleUseCase;
-  //final SalesDetailsByMasterIdUseCase _salesDetailsByMasterIdUseCase;
+  // final SaveSaleUseCase _saveSaleUseCase;
+  final SalesDetailsByMasterIdUseCase _salesDetailsByMasterIdUseCase;
+  final SaveOrderUseCase _saveOrderUseCase;
   //final SalesRepository _salesRepository;
   //int _selectedSaleTab = 0;
   bool _isSearchBarVisible = false;
@@ -24,11 +28,13 @@ class SaleCubit extends Cubit<SaleState> {
   double get editedPrice => _editedPrice;
   bool get isPriceEditing => _isPriceEditing;
   SaleCubit({
-    required SaveSaleUseCase saveSaleUseCase,
-    required SalesRepository salesRepository,
-    //required SalesDetailsByMasterIdUseCase salesDetailsByMasterIdUseCase,
-  }) : _saveSaleUseCase = saveSaleUseCase,
-       // _salesDetailsByMasterIdUseCase = salesDetailsByMasterIdUseCase,
+    //required SaveSaleUseCase saveSaleUseCase,
+   // required SalesRepository salesRepository,
+    required SalesDetailsByMasterIdUseCase salesDetailsByMasterIdUseCase,
+    required SaveOrderUseCase saveOrderUseCase,
+  }) : // _saveSaleUseCase = saveSaleUseCase,
+       _salesDetailsByMasterIdUseCase = salesDetailsByMasterIdUseCase,
+       _saveOrderUseCase = saveOrderUseCase,
        // _salesRepository = salesRepository,
        super(SaleInitial());
 
@@ -109,38 +115,54 @@ class SaleCubit extends Cubit<SaleState> {
 
   int get selectedCategoryId => _selectedCategoryId;
   String get selectedCategoryName => _selectedCategoryName;
-  // --------------------- API Save Sale ---------------------
-  Future<void> saveSale(SaveSaleRequest request) async {
-    emit(SaleLoading());
+  // // --------------------- API Save Sale ---------------------
+  // Future<void> saveSale(SaveSaleRequest request) async {
+  //   emit(SaleLoading());
 
+  //   try {
+  //     final response = await _saveSaleUseCase(request);
+
+  //     response.fold(
+  //       (failure) => emit(SaleError(error: failure.message)),
+  //       (saleResponse) => emit(SaleSuccess(response: saleResponse)),
+  //     );
+  //   } catch (e) {
+  //     emit(SaleError(error: e.toString()));
+  //   }
+  // }
+
+  // // --------------------- API Fetch SalesDetails By MasterId ---------------------
+  Future<void> fetchSalesDetailsByMasterId(
+    FetchSalesDetailsRequest request,
+  ) async {
+    print('FetchSalesDetailsRequest ${request.toJson()}');
+    emit(SlesDetailsFetchInitial());
     try {
-      final response = await _saveSaleUseCase(request);
+      final response = await _salesDetailsByMasterIdUseCase(request);
 
       response.fold(
-        (failure) => emit(SaleError(error: failure.message)),
-        (saleResponse) => emit(SaleSuccess(response: saleResponse)),
+        (failure) => emit(SalesReportFetchError(error: failure.message)),
+        (saleResponse) =>
+            emit(SalesDetailsFetchSuccess(response: saleResponse)),
       );
     } catch (e) {
-      emit(SaleError(error: e.toString()));
+      emit(SalesReportFetchError(error: e.toString()));
     }
   }
 
-  // // --------------------- API Fetch SalesDetails By MasterId ---------------------
-  // Future<void> fetchSalesDetailsByMasterId(
-  //   FetchSalesDetailsRequest request,
-  // ) async {
-  //   print('FetchSalesDetailsRequest ${request.toJson()}');
-  //   emit(SlesDetailsFetchInitial());
-  //   try {
-  //     final response = await _salesDetailsByMasterIdUseCase(request);
+  // =================== ✅ Order API ===================
+  Future<void> saveOrder(OrderSaveParameter request) async {
+    emit(OrderSaveLoading());
 
-  //     response.fold(
-  //       (failure) => emit(SalesReportFetchError(error: failure.message)),
-  //       (saleResponse) =>
-  //           emit(SalesDetailsFetchSuccess(response: saleResponse)),
-  //     );
-  //   } catch (e) {
-  //     emit(SalesReportFetchError(error: e.toString()));
-  //   }
-  // }
+    try {
+      final response = await _saveOrderUseCase(request);
+
+      response.fold(
+        (failure) => emit(OrderSaveError(error: failure.message)),
+        (orderResponse) => emit(OrderSaveSuccess(response: orderResponse)),
+      );
+    } catch (e) {
+      emit(OrderSaveError(error: e.toString()));
+    }
+  }
 }

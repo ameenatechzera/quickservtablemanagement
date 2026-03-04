@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickservtablemanagement/core/database/app_database.dart';
-import 'package:quickservtablemanagement/core/theme/colors.dart';
 import 'package:quickservtablemanagement/fetaures/authentication/presentation/cubit/logincubit/login_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/authentication/presentation/cubit/registercubit/register_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/authentication/presentation/screens/splash_screen.dart';
@@ -10,7 +8,9 @@ import 'package:quickservtablemanagement/fetaures/categories/presentation/cubit/
 import 'package:quickservtablemanagement/fetaures/groups/presentation/cubit/group_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/products/presentation/cubit/products_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/cubit/sale_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/salesreport/presentation/cubit/salereport_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/settings/presentation/cubit/settings_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/unit/presentation/cubit/unit_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/vat/presentation/cubit/vat_cubit.dart';
 import 'package:quickservtablemanagement/services/service_locator.dart';
@@ -19,13 +19,13 @@ import 'package:quickservtablemanagement/services/shared_preference_helper.dart'
 late final AppDatabase appDb;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: AppColors.theme,
-      statusBarIconBrightness: Brightness.dark,
-      //statusBarBrightness: Brightness.dark,
-    ),
-  );
+  // SystemChrome.setSystemUIOverlayStyle(
+  //   const SystemUiOverlayStyle(
+  //     statusBarColor: AppColors.theme,
+  //     statusBarIconBrightness: Brightness.dark,
+  //     //statusBarBrightness: Brightness.dark,
+  //   ),
+  // );
   appDb = await $FloorAppDatabase.databaseBuilder('app_database.db').build();
   await ServiceLocator.init();
   final sharedPrefHelper = SharedPreferenceHelper();
@@ -58,7 +58,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<SettingsCubit>(create: (_) => sl<SettingsCubit>()),
         BlocProvider<CategoriesCubit>(create: (_) => sl<CategoriesCubit>()),
         BlocProvider<SaleCubit>(create: (_) => sl<SaleCubit>()),
-        // BlocProvider<SalesReportCubit>(create: (_) => sl<SalesReportCubit>()),
+        BlocProvider<SalesReportCubit>(create: (_) => sl<SalesReportCubit>()),
+        BlocProvider<TableCubit>(create: (_) => sl<TableCubit>()),
+
         // BlocProvider<UserCreationCubit>(create: (_) => sl<UserCreationCubit>()),
         // BlocProvider<AccountledgerCubit>(
         //   create: (_) => sl<AccountledgerCubit>(),
@@ -83,11 +85,11 @@ class MyApp extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarColor: AppColors.theme,
-              statusBarIconBrightness: Brightness.dark,
-              statusBarBrightness: Brightness.light,
-            ),
+            // systemOverlayStyle: SystemUiOverlayStyle(
+            //   statusBarColor: AppColors.theme,
+            //   statusBarIconBrightness: Brightness.dark,
+            //   statusBarBrightness: Brightness.light,
+            // ),
           ),
         ),
         home: const SplashScreen(),
