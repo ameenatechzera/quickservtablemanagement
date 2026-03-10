@@ -9,14 +9,25 @@ import 'package:quickservtablemanagement/fetaures/cart/domain/cart_manager.dart'
 import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/cart_item.dart';
 import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/payment_option.dart';
 import 'package:quickservtablemanagement/fetaures/cart/presentation/widgets/summary_row.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/update_ordermasterwithtoken_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster/ordermaster_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/order_save_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/cubit/sale_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
 import 'package:quickservtablemanagement/services/shared_preference_helper.dart';
 
 class CartScreen extends StatefulWidget {
-  final int tableId;
-  final String tableName;
-  const CartScreen({super.key, required this.tableId, required this.tableName});
+  final int? tableId;
+  final String? tableName;
+  final int? orderMasterId;
+  final String? orderNo;
+  const CartScreen({
+    super.key,
+    required this.tableId,
+    required this.tableName,
+    this.orderMasterId,
+    this.orderNo,
+  });
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -29,11 +40,17 @@ class _CartScreenState extends State<CartScreen> {
 
   final ValueNotifier<double> multiCardAmount = ValueNotifier<double>(0);
   final SharedPreferenceHelper helper = SharedPreferenceHelper();
-
+  int? userId;
   @override
   void initState() {
     super.initState();
     _loadDefaultPayment();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    userId = await helper.getUserId();
+    print("User ID: $userId");
   }
 
   /// 🔹 Load default payment from SharedPreferences
@@ -54,93 +71,111 @@ class _CartScreenState extends State<CartScreen> {
       backgroundColor: AppColors.white,
       appBar: AppBar(title: Text('Cart')),
       body: SafeArea(
-        child: BlocConsumer<SaleCubit, SaleState>(
-          listener: (context, state) async {
-            if (state is SalesDetailsFetchSuccess) {
-              print('responseFromSales ${state.response}');
-              Navigator.pop(context);
-              //   Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (context) => PrintPage(
-              //         pageFrom: 'SalesReport',
-              //         // sales: saleList.first,
-              //         sales: state.response,
-              //       ),
-              //     ),
-              //   );
-              //   // Navigator.pop(context);
-            }
-            if (state is OrderSaveSuccess) {
-              showAnimatedToast(
-                context,
-                message:
-                    'Sale Saved! Invoice: ${state.response.details?.orderNo}',
-                isSuccess: true,
-              );
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(
-              //     content: Text(
-              //       'Sale Saved! Invoice: ${state.response.details?.invoiceNo}',
-              //     ),
-              //     backgroundColor: AppColors.green,
-              //   ),
-              // );
-              CartManager().clearCart();
-              // final branchId = await SharedPreferenceHelper().getBranchId();
-              print('reachedHHHHHHHHHHHHHHHH');
-              // context.read<SaleCubit>().fetchSalesDetailsByMasterId(
-              //   FetchSalesDetailsRequest(
-              //     branchId: branchId,
-              //     SalesMasterId: state.response.details!.salesMasterId
-              //         .toString(),
-              //   ),
-              // );
-            } else if (state is OrderSaveError) {
-              showAnimatedToast(
-                context,
-                message: 'Error: ${state.error}',
-                isSuccess: false,
-              );
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(content: Text('Error: ${state.error}')),
-              // );
-            }
-          },
-          builder: (context, state) {
-            final items = CartManager().cartItems.value;
+        child: MultiBlocListener(
+          listeners: [
+            /// Sale Cubit Listener
+            BlocListener<SaleCubit, SaleState>(
+              listener: (context, state) async {
+                if (state is SalesDetailsFetchSuccess) {
+                  print('responseFromSales ${state.response}');
+                  Navigator.pop(context);
+                }
 
-            if (items.isEmpty) {
-              return const Center(child: Text("Your cart is empty"));
-            }
+                if (state is OrderSaveSuccess) {
+                  // ✅ only for takeaway
+                  if (widget.tableId == null) {
+                    context.read<TableCubit>().fetchTakeawayOrders();
+                  }
+                  Navigator.pop(context);
 
-            return Column(
-              children: [
-                Expanded(
-                  child: ValueListenableBuilder<List<CartItem>>(
-                    valueListenable: CartManager().cartItems,
-                    builder: (context, items, _) {
-                      if (items.isEmpty) {
-                        return const Center(child: Text("Your cart is empty"));
-                      }
+                  final orderNo = state.response.details?.orderNo ?? '';
 
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return CartItemRow(item: item, index: index + 1);
-                        },
-                      );
-                    },
+                  showAnimatedToast(
+                    context,
+                    message: 'Sale Saved! Invoice: $orderNo',
+                    isSuccess: true,
+                  );
+
+                  CartManager().clearCart();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+
+                  print('reachedHHHHHHHHHHHHHHHH');
+                } else if (state is OrderSaveError) {
+                  showAnimatedToast(
+                    context,
+                    message: 'Error: ${state.error}',
+                    isSuccess: false,
+                  );
+                }
+              },
+            ),
+
+            /// Update Token Cubit Listener
+            BlocListener<OrderMasterCubit, OrderMasterState>(
+              listener: (context, state) {
+                if (state is UpdateOrderMasterLoaded) {
+                  Navigator.pop(context);
+
+                  final orderNo = state.response.details?.orderNo ?? '';
+
+                  showAnimatedToast(
+                    context,
+                    message: 'Order Updated! Order No: $orderNo',
+                    isSuccess: true,
+                  );
+
+                  CartManager().clearCart();
+
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                } else if (state is UpdateOrderMasterError) {
+                  showAnimatedToast(
+                    context,
+                    message: state.message,
+                    isSuccess: false,
+                  );
+                }
+              },
+            ),
+          ],
+
+          child: BlocBuilder<SaleCubit, SaleState>(
+            builder: (context, state) {
+              final items = CartManager().cartItems.value;
+
+              if (items.isEmpty) {
+                return const Center(child: Text("Your cart is empty"));
+              }
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: ValueListenableBuilder<List<CartItem>>(
+                      valueListenable: CartManager().cartItems,
+                      builder: (context, items, _) {
+                        if (items.isEmpty) {
+                          return const Center(
+                            child: Text("Your cart is empty"),
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return CartItemRow(item: item, index: index + 1);
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
       bottomNavigationBar: ValueListenableBuilder<List<CartItem>>(
@@ -321,7 +356,9 @@ class _CartScreenState extends State<CartScreen> {
                         SizedBox(
                           width: double.infinity,
                           height: 48,
-                          child: state is OrderSaveLoading
+                          child:
+                              state is OrderSaveLoading ||
+                                  state is UpdateOrderMasterLoading
                               ? const Center(child: CircularProgressIndicator())
                               : ElevatedButton(
                                   style: ElevatedButton.styleFrom(
@@ -332,6 +369,54 @@ class _CartScreenState extends State<CartScreen> {
                                     elevation: 0,
                                   ),
                                   onPressed: () async {
+                                    /// 🔴 If adding token → skip customer modal
+                                    if (widget.orderMasterId != null) {
+                                      final items =
+                                          CartManager().cartItems.value;
+
+                                      final updateRequest =
+                                          UpdateOrderMasterWithTokenParameter(
+                                            orderMasterId: widget.orderMasterId,
+                                            orderNo: widget.orderNo,
+                                            grandTotal: total,
+                                            billStatus: '0',
+                                            salesMasterId: null,
+                                            branchId: 1,
+                                            tableId: widget.tableId,
+                                            createdUser: '',
+                                            orderDetails: items.map((e) {
+                                              return OrderDetailsParameter(
+                                                productCode: e.productCode,
+                                                productName: e.productName,
+                                                productDescription:
+                                                    e.product_description ?? '',
+                                                qty: e.qty.toInt(),
+                                                unitId: int.parse(e.unitId),
+                                                purchaseCost: double.parse(
+                                                  e.purchaseCost,
+                                                ),
+                                                salesRate: e.salesRate,
+                                                excludeRate: e.salesRate,
+                                                subtotal: e.totalPrice,
+                                                vatId: 1,
+                                                vatAmount: tax / items.length,
+                                                totalAmount:
+                                                    e.totalPrice +
+                                                    (tax / items.length),
+                                                groupId: 1,
+                                              );
+                                            }).toList(),
+                                          );
+
+                                      context
+                                          .read<OrderMasterCubit>()
+                                          .updateOrderMasterWithToken(
+                                            updateRequest,
+                                          );
+
+                                      return;
+                                    }
+
                                     final nameCtrl = TextEditingController();
                                     final addressCtrl = TextEditingController();
                                     final phoneCtrl = TextEditingController();
@@ -703,10 +788,14 @@ class _CartScreenState extends State<CartScreen> {
                                                             billStatus: 'O',
                                                             tableId:
                                                                 widget.tableId,
-                                                            userId: 1,
+                                                            userId: userId ?? 0,
                                                             mergeStatus: 0,
                                                             mergeId: null,
-                                                            orderType: 'dinein',
+                                                            orderType:
+                                                                widget.tableId ==
+                                                                    null
+                                                                ? 'takeaway'
+                                                                : 'dinein',
                                                             branchId: 1,
                                                             customerName:
                                                                 nameCtrl.text
@@ -718,7 +807,10 @@ class _CartScreenState extends State<CartScreen> {
                                                                 .text
                                                                 .trim(),
                                                             seatsUsed:
-                                                                selectedCount,
+                                                                widget.tableId ==
+                                                                    null
+                                                                ? 0
+                                                                : selectedCount,
                                                             remarks: '',
                                                             salesMasterId: null,
                                                             createdUser: '',
@@ -765,7 +857,73 @@ class _CartScreenState extends State<CartScreen> {
                                                                 .toList(),
                                                           );
 
-                                                          // Trigger order saving in cubit
+                                                          // /// 🔴 Decide API here
+                                                          // if (widget
+                                                          //         .orderMasterId !=
+                                                          //     null) {
+                                                          //   final updateRequest = UpdateOrderMasterWithTokenParameter(
+                                                          //     orderMasterId: widget
+                                                          //         .orderMasterId,
+                                                          //     orderNo: widget
+                                                          //         .orderNo,
+                                                          //     grandTotal: total,
+                                                          //     billStatus: '0',
+                                                          //     salesMasterId:
+                                                          //         null,
+                                                          //     branchId: 1,
+                                                          //     tableId: widget
+                                                          //         .tableId,
+                                                          //     createdUser: '',
+                                                          //     orderDetails: items.map((
+                                                          //       e,
+                                                          //     ) {
+                                                          //       return OrderDetailsParameter(
+                                                          //         productCode: e
+                                                          //             .productCode,
+                                                          //         productName: e
+                                                          //             .productName,
+                                                          //         productDescription:
+                                                          //             e.product_description ??
+                                                          //             '',
+                                                          //         qty: e.qty
+                                                          //             .toInt(),
+                                                          //         unitId:
+                                                          //             int.parse(
+                                                          //               e.unitId,
+                                                          //             ),
+                                                          //         purchaseCost:
+                                                          //             double.parse(
+                                                          //               e.purchaseCost,
+                                                          //             ),
+                                                          //         salesRate: e
+                                                          //             .salesRate,
+                                                          //         excludeRate: e
+                                                          //             .salesRate,
+                                                          //         subtotal: e
+                                                          //             .totalPrice,
+                                                          //         vatId: 1,
+                                                          //         vatAmount:
+                                                          //             tax /
+                                                          //             items
+                                                          //                 .length,
+                                                          //         totalAmount:
+                                                          //             e.totalPrice +
+                                                          //             (tax /
+                                                          //                 items
+                                                          //                     .length),
+                                                          //         groupId: 1,
+                                                          //       );
+                                                          //     }).toList(),
+                                                          //   );
+
+                                                          //   context
+                                                          //       .read<
+                                                          //         OrderMasterCubit
+                                                          //       >()
+                                                          //       .updateOrderMasterWithToken(
+                                                          //         updateRequest,
+                                                          //       );
+                                                          // } else {
                                                           context
                                                               .read<SaleCubit>()
                                                               .saveOrder(
@@ -773,89 +931,13 @@ class _CartScreenState extends State<CartScreen> {
                                                               );
                                                         },
 
-                                                        // Build SaveSaleRequest from cart
-                                                        // final request = SaveSaleRequest(
-                                                        //   invoiceDate:
-                                                        //       DateTime.now()
-                                                        //           .toIso8601String()
-                                                        //           .split('T')
-                                                        //           .first,
-                                                        //   invoiceTime:
-                                                        //       DateTime.now()
-                                                        //           .toIso8601String()
-                                                        //           .split('T')
-                                                        //           .last
-                                                        //           .split('.')
-                                                        //           .first,
-                                                        //   ledgerId: 0,
-                                                        //   subTotal: subTotal,
-                                                        //   discountAmount:
-                                                        //       discount,
-                                                        //   vatAmount: tax,
-                                                        //   grandTotal: total,
-                                                        //   cashLedgerId:
-                                                        //       cashLedgerId,
-                                                        //   cashAmount: cashAmt,
-                                                        //   cardLedgerId:
-                                                        //       cardLedgerId,
-                                                        //   cardAmount: cardAmt,
-                                                        //   creditAmount: 0,
-                                                        //   tableId: 1,
-                                                        //   supplierId: 1,
-                                                        //   cashierId: 1,
-                                                        //   orderMasterId: 10,
-                                                        //   billStatus: '',
-                                                        //   salesType: '',
-                                                        //   billTokenNo: 22,
-                                                        //   createdUser: 1,
-                                                        //   branchId: 1,
-                                                        //   totalTax: tax,
-                                                        //   salesDetails: items
-                                                        //       .map(
-                                                        //         (
-                                                        //           e,
-                                                        //         ) => SaleDetail(
-                                                        //           productCode:
-                                                        //               e.productCode,
-                                                        //           productName:
-                                                        //               e.productName,
-                                                        //           qty: (e.qty as num)
-                                                        //               .toInt(), // safer
-                                                        //           unitId: double.parse(
-                                                        //             e.unitId,
-                                                        //           ).toInt(),
-                                                        //           purchaseCost:
-                                                        //               double.parse(
-                                                        //                 e.purchaseCost,
-                                                        //               ),
-                                                        //           salesRate: e
-                                                        //               .salesRate,
-                                                        //           excludeRate:
-                                                        //               e.salesRate,
-                                                        //           subtotal: e
-                                                        //               .totalPrice,
-                                                        //           vatId: 1,
-                                                        //           vatAmount:
-                                                        //               tax /
-                                                        //               items
-                                                        //                   .length,
-                                                        //           totalAmount:
-                                                        //               e.totalPrice +
-                                                        //               (tax /
-                                                        //                   items.length),
-                                                        //           conversionRate:
-                                                        //               1,
-                                                        //         ),
-                                                        //       )
-                                                        //       .toList(),
-                                                        // );
-
-                                                        // // Trigger cubit
+                                                        // // Trigger order saving in cubit
                                                         // context
                                                         //     .read<SaleCubit>()
-                                                        //     .saveSale(
-                                                        //       request,
+                                                        //     .saveOrder(
+                                                        //       orderRequest,
                                                         //     );
+                                                        // },
                                                         child: const Text(
                                                           "Confirm Sale",
                                                           style: TextStyle(
@@ -875,114 +957,11 @@ class _CartScreenState extends State<CartScreen> {
                                       },
                                     );
                                   },
-                                  // onPressed: () async {
-                                  //   final payment = selectedPayment.value;
 
-                                  //   double cashAmt = 0;
-                                  //   double cardAmt = 0;
-
-                                  //   if (payment == 'Cash') {
-                                  //     cashAmt = total;
-                                  //     cardAmt = 0;
-                                  //   } else if (payment == 'Card') {
-                                  //     cashAmt = 0;
-                                  //     cardAmt = total;
-                                  //   } else if (payment == 'Multi') {
-                                  //     cashAmt = multiCashAmount.value;
-                                  //     cardAmt = multiCardAmount.value;
-
-                                  //     // safety check (only if user did not press OK or mismatch)
-                                  //     if ((cashAmt + cardAmt - total).abs() >
-                                  //         0.01) {
-                                  //       ScaffoldMessenger.of(
-                                  //         context,
-                                  //       ).showSnackBar(
-                                  //         const SnackBar(
-                                  //           content: Text(
-                                  //             'Multi payment amount mismatch',
-                                  //           ),
-                                  //         ),
-                                  //       );
-                                  //       return;
-                                  //     }
-                                  //   } // 🔹 LOAD LEDGERS FROM SHARED PREF
-                                  //   final ledgerData =
-                                  //       await SharedPreferenceHelper()
-                                  //           .getLedgers();
-
-                                  //   final int cashLedgerId =
-                                  //       ledgerData['cashLedgerId'] ?? 0;
-                                  //   final int cardLedgerId =
-                                  //       ledgerData['cardLedgerId'] ?? 0;
-
-                                  //   final items =
-                                  //       CartManager().cartItems.value;
-                                  //   // Build SaveSaleRequest from cart
-                                  //   final request = SaveSaleRequest(
-                                  //     invoiceDate: DateTime.now()
-                                  //         .toIso8601String()
-                                  //         .split('T')
-                                  //         .first,
-                                  //     invoiceTime: DateTime.now()
-                                  //         .toIso8601String()
-                                  //         .split('T')
-                                  //         .last
-                                  //         .split('.')
-                                  //         .first,
-                                  //     ledgerId: 0,
-                                  //     subTotal: subTotal,
-                                  //     discountAmount: discount,
-                                  //     vatAmount: tax,
-                                  //     grandTotal: total,
-                                  //     cashLedgerId: cashLedgerId,
-                                  //     cashAmount: cashAmt,
-                                  //     cardLedgerId: cardLedgerId,
-                                  //     cardAmount: cardAmt,
-                                  //     creditAmount: 0,
-                                  //     tableId: 1,
-                                  //     supplierId: 1,
-                                  //     cashierId: 1,
-                                  //     orderMasterId: 10,
-                                  //     billStatus: '',
-                                  //     salesType: '',
-                                  //     billTokenNo: 22,
-                                  //     createdUser: 1,
-                                  //     branchId: 1,
-                                  //     totalTax: tax,
-                                  //     salesDetails: items
-                                  //         .map(
-                                  //           (e) => SaleDetail(
-                                  //             productCode: e.productCode,
-                                  //             productName: e.productName,
-                                  //             qty: (e.qty as num)
-                                  //                 .toInt(), // safer
-                                  //             unitId: double.parse(
-                                  //               e.unitId,
-                                  //             ).toInt(),
-                                  //             purchaseCost: double.parse(
-                                  //               e.purchaseCost,
-                                  //             ),
-                                  //             salesRate: e.salesRate,
-                                  //             excludeRate: e.salesRate,
-                                  //             subtotal: e.totalPrice,
-                                  //             vatId: 1,
-                                  //             vatAmount: tax / items.length,
-                                  //             totalAmount:
-                                  //                 e.totalPrice +
-                                  //                 (tax / items.length),
-                                  //             conversionRate: 1,
-                                  //           ),
-                                  //         )
-                                  //         .toList(),
-                                  //   );
-
-                                  //   // Trigger cubit
-                                  //   context.read<SaleCubit>().saveSale(
-                                  //     request,
-                                  //   );
-                                  // },
-                                  child: const Text(
-                                    'Save Order',
+                                  child: Text(
+                                    widget.orderMasterId != null
+                                        ? 'Update Order'
+                                        : 'Save Order',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,

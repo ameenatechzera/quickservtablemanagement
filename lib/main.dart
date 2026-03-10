@@ -6,6 +6,8 @@ import 'package:quickservtablemanagement/fetaures/authentication/presentation/cu
 import 'package:quickservtablemanagement/fetaures/authentication/presentation/screens/splash_screen.dart';
 import 'package:quickservtablemanagement/fetaures/categories/presentation/cubit/categories_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/groups/presentation/cubit/group_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/billdetails/billdetails_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster/ordermaster_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/products/presentation/cubit/products_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/cubit/sale_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/salesreport/presentation/cubit/salereport_cubit.dart';
@@ -61,10 +63,8 @@ class MyApp extends StatelessWidget {
         BlocProvider<SalesReportCubit>(create: (_) => sl<SalesReportCubit>()),
         BlocProvider<TableCubit>(create: (_) => sl<TableCubit>()),
 
-        // BlocProvider<UserCreationCubit>(create: (_) => sl<UserCreationCubit>()),
-        // BlocProvider<AccountledgerCubit>(
-        //   create: (_) => sl<AccountledgerCubit>(),
-        // ),
+        BlocProvider<BilldetailsCubit>(create: (_) => sl<BilldetailsCubit>()),
+        BlocProvider<OrderMasterCubit>(create: (_) => sl<OrderMasterCubit>()),
         // BlocProvider<ItemWiseReportCubit>(
         //   create: (_) => sl<ItemWiseReportCubit>(),
         // ),

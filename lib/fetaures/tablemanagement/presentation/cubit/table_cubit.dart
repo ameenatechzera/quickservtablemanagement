@@ -4,10 +4,12 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_alltable_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_table_model.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_takeawayrunning_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fethc_runningtable_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_alltable_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_runningtable_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_table_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_takeawayrunning_usecase.dart';
 
 part 'table_state.dart';
 
@@ -15,14 +17,17 @@ class TableCubit extends Cubit<TableState> {
   final FetchTablesUseCase _fetchTablesUseCase;
   final FetchRunningTablesUseCase _fetchRunningTablesUseCase;
   final FetchAllTablesUseCase _fetchAllTablesUseCase;
+  final FetchTakeawayOrdersUseCase _fetchTakeawayOrdersUseCase;
 
   TableCubit({
     required FetchTablesUseCase fetchTablesUseCase,
     required FetchRunningTablesUseCase fetchRunningTablesUseCase,
     required FetchAllTablesUseCase fetchAllTablesUseCase,
+    required FetchTakeawayOrdersUseCase fetchTakeawayOrdersUseCase,
   }) : _fetchTablesUseCase = fetchTablesUseCase,
        _fetchRunningTablesUseCase = fetchRunningTablesUseCase,
        _fetchAllTablesUseCase = fetchAllTablesUseCase,
+       _fetchTakeawayOrdersUseCase = fetchTakeawayOrdersUseCase,
        super(TableInitial());
 
   /// =========================================================
@@ -109,6 +114,35 @@ class TableCubit extends Cubit<TableState> {
     } catch (e) {
       log("Fetch All Tables Exception: $e");
       emit(AllTableError('An error occurred: $e'));
+    }
+  }
+
+  /// =========================================================
+  /// 🟣 FETCH TAKEAWAY ORDERS
+  /// =========================================================
+  Future<void> fetchTakeawayOrders() async {
+    emit(TakeawayOrderLoading());
+
+    try {
+      log("Fetching Takeaway Orders...");
+
+      final response = await _fetchTakeawayOrdersUseCase();
+
+      log(response.toString(), name: 'result_takeaway_orders');
+
+      response.fold(
+        (failure) {
+          log("Fetch Takeaway Orders Failure: ${failure.message}");
+          emit(TakeawayOrderError(failure.message));
+        },
+        (success) {
+          log("Fetch Takeaway Orders Success");
+          emit(TakeawayOrderLoaded(success));
+        },
+      );
+    } catch (e) {
+      log("Fetch Takeaway Orders Exception: $e");
+      emit(TakeawayOrderError('An error occurred: $e'));
     }
   }
 }

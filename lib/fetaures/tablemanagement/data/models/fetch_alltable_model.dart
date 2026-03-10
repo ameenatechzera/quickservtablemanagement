@@ -34,17 +34,6 @@ class AllTablesResponseModel extends Equatable {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'status': status,
-      'error': error,
-      'message': message,
-      'tables': tables?.map(
-        (key, value) => MapEntry(key, value.map((e) => e.toJson()).toList()),
-      ),
-    };
-  }
-
   AllTablesResponseEntity toEntity() {
     return AllTablesResponseEntity(
       status: status,
@@ -72,10 +61,7 @@ class AllTableModel extends Equatable {
   final String? modifiedDate;
   final String? modifiedUser;
   final bool? isRunning;
-  final int? orderMasterId;
-  final String? orderNo;
-  final String? amount;
-
+  final List<OrderDetailsModel>? orders;
   const AllTableModel({
     this.tableId,
     this.tableNumber,
@@ -88,9 +74,7 @@ class AllTableModel extends Equatable {
     this.modifiedDate,
     this.modifiedUser,
     this.isRunning,
-    this.orderMasterId,
-    this.orderNo,
-    this.amount,
+    this.orders,
   });
 
   factory AllTableModel.fromJson(Map<String, dynamic> json) {
@@ -106,30 +90,32 @@ class AllTableModel extends Equatable {
       modifiedDate: json['ModifiedDate'] as String?,
       modifiedUser: json['ModifiedUser']?.toString(),
       isRunning: json['is_running'] as bool?,
-      orderMasterId: json['OrderMasterId'] as int?,
-      orderNo: json['OrderNo'] as String?,
-      amount: json['Amount']?.toString(),
+      orders: json['orders'] != null
+          ? (json['orders'] as List)
+                .map((e) => OrderDetailsModel.fromJson(e))
+                .toList()
+          : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'table_id': tableId,
-      'table_number': tableNumber,
-      'number_of_seat': numberOfSeat,
-      'status': status,
-      'table_group': tableGroup,
-      'branchId': branchId,
-      'CreatedDate': createdDate,
-      'CreatedUser': createdUser,
-      'ModifiedDate': modifiedDate,
-      'ModifiedUser': modifiedUser,
-      'is_running': isRunning,
-      'OrderMasterId': orderMasterId,
-      'OrderNo': orderNo,
-      'Amount': amount,
-    };
-  }
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     'table_id': tableId,
+  //     'table_number': tableNumber,
+  //     'number_of_seat': numberOfSeat,
+  //     'status': status,
+  //     'table_group': tableGroup,
+  //     'branchId': branchId,
+  //     'CreatedDate': createdDate,
+  //     'CreatedUser': createdUser,
+  //     'ModifiedDate': modifiedDate,
+  //     'ModifiedUser': modifiedUser,
+  //     'is_running': isRunning,
+  //     'OrderMasterId': orderMasterId,
+  //     'OrderNo': orderNo,
+  //     'Amount': amount,
+  //   };
+  // }
 
   AllTableEntity toEntity() {
     return AllTableEntity(
@@ -144,9 +130,7 @@ class AllTableModel extends Equatable {
       modifiedDate: modifiedDate,
       modifiedUser: modifiedUser,
       isRunning: isRunning,
-      orderMasterId: orderMasterId,
-      orderNo: orderNo,
-      amount: amount,
+      orders: orders?.map((e) => e.toEntity()).toList(),
     );
   }
 
@@ -163,8 +147,33 @@ class AllTableModel extends Equatable {
     modifiedDate,
     modifiedUser,
     isRunning,
-    orderMasterId,
-    orderNo,
-    amount,
+    orders,
   ];
+}
+
+class OrderDetailsModel extends Equatable {
+  final int? orderMasterId;
+  final String? orderNo;
+  final double? grandTotal;
+
+  const OrderDetailsModel({this.orderMasterId, this.orderNo, this.grandTotal});
+
+  factory OrderDetailsModel.fromJson(Map<String, dynamic> json) {
+    return OrderDetailsModel(
+      orderMasterId: json['OrderMasterId'],
+      orderNo: json['OrderNo'],
+      grandTotal: (json['Amount'] as num?)?.toDouble(),
+    );
+  }
+
+  OrderDetailsEntity toEntity() {
+    return OrderDetailsEntity(
+      orderMasterId: orderMasterId,
+      orderNo: orderNo,
+      grandTotal: grandTotal,
+    );
+  }
+
+  @override
+  List<Object?> get props => [orderMasterId, orderNo, grandTotal];
 }

@@ -20,11 +20,19 @@ import 'package:quickservtablemanagement/fetaures/groups/data/repositories/group
 import 'package:quickservtablemanagement/fetaures/groups/domain/repositories/group_repository.dart';
 import 'package:quickservtablemanagement/fetaures/groups/domain/usecases/fetch_group_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/groups/presentation/cubit/group_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/datasources/billdetails_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/datasources/ordermaster_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/repositories/billdetails_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/repositories/ordermaster_repository_impl.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/repositories/billdetails_repository.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/repositories/ordermaster_repository.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_billdetails_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_ordermaster_usecase.dart';
-import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/finish_order_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/print_pdf_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/update_ordermasterwithtoken_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/billdetails/billdetails_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster/ordermaster_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/datasources/product_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/repositories/product_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/products/data/repositories/product_repository_local_impl.dart';
@@ -59,6 +67,7 @@ import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/reposit
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_alltable_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_runningtable_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_table_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/usecases/fetch_takeawayrunning_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
 import 'package:quickservtablemanagement/fetaures/unit/data/datasources/units_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/unit/data/repositories/unit_repository_impl.dart';
@@ -304,6 +313,7 @@ class ServiceLocator {
         fetchTablesUseCase: sl(),
         fetchRunningTablesUseCase: sl(),
         fetchAllTablesUseCase: sl(),
+        fetchTakeawayOrdersUseCase: sl(),
       ),
     );
 
@@ -311,6 +321,7 @@ class ServiceLocator {
     sl.registerLazySingleton(() => FetchTablesUseCase(sl()));
     sl.registerLazySingleton(() => FetchRunningTablesUseCase(sl()));
     sl.registerLazySingleton(() => FetchAllTablesUseCase(sl()));
+    sl.registerLazySingleton(() => FetchTakeawayOrdersUseCase(sl()));
 
     // Data Source
     sl.registerLazySingleton<TablesRemoteDataSource>(
@@ -324,10 +335,20 @@ class ServiceLocator {
     // ------------------- ORDER MASTER -------------------
 
     // Cubit
-    sl.registerFactory(() => OrderMasterCubit(fetchOrderMasterUseCase: sl()));
+    sl.registerFactory(
+      () => OrderMasterCubit(
+        fetchOrderMasterUseCase: sl(),
+        finishOrderUseCase: sl(),
+        printPdfUseCase: sl(),
+        updateOrderMasterWithTokenUseCase: sl(),
+      ),
+    );
 
     // UseCase
     sl.registerLazySingleton(() => FetchOrderMasterUseCase(sl()));
+    sl.registerLazySingleton(() => FinishOrderUseCase(sl()));
+    sl.registerLazySingleton(() => PrintPdfUseCase(sl()));
+    sl.registerLazySingleton(() => UpdateOrderMasterWithTokenUseCase(sl()));
 
     // Data Source
     sl.registerLazySingleton<OrderMasterRemoteDataSource>(
@@ -337,6 +358,23 @@ class ServiceLocator {
     // Repository
     sl.registerLazySingleton<OrderMasterRepository>(
       () => OrderMasterRepositoryImpl(remoteDataSource: sl()),
+    );
+    // ------------------- BILL DETAILS -------------------
+
+    // Cubit
+    sl.registerFactory(() => BilldetailsCubit(fetchBillDetailsUseCase: sl()));
+
+    // UseCase
+    sl.registerLazySingleton(() => FetchBillDetailsUseCase(sl()));
+
+    // Data Source
+    sl.registerLazySingleton<BillDetailsRemoteDataSource>(
+      () => BillDetailsRemoteDataSourceImpl(),
+    );
+
+    // Repository
+    sl.registerLazySingleton<BillDetailsRepository>(
+      () => BillDetailsRepositoryImpl(remoteDataSource: sl()),
     );
   }
 }

@@ -1,10 +1,21 @@
-import 'package:dartz/dartz.dart';
-import 'package:quickservtablemanagement/core/errors/failure.dart';
-import 'package:quickservtablemanagement/fetaures/orderdetails/domain/entities/fetch_ordermaster_entity.dart';
+import 'package:quickservtablemanagement/core/models/master_api_response_model.dart';
+import 'package:quickservtablemanagement/core/utils/typedef.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_ordermaster_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/finish_order_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/update_ordermasterwithtoken_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_ordermaster_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/finish_order_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/print_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/update_ordermasterwithtoken_parameter.dart';
 
 abstract class OrderMasterRepository {
-  Future<Either<Failure, FetchOrderMasterEntity>> fetchOrderMaster(
+  ResultFuture<FetchOrderMasterModel> fetchOrderMaster(
     FetchOrderMasterParameter parameter,
   );
+  ResultFuture<FinishOrderResponseModel> finishOrder(
+    FinishOrderParameter parameter,
+  );
+  ResultFuture<ApiResponseModel> printVoucher(PrintParameter parameter);
+  ResultFuture<UpdateOrderMasterWithTokenResponseModel>
+  updateOrderMasterWithToken(UpdateOrderMasterWithTokenParameter parameter);
 }

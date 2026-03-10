@@ -254,8 +254,33 @@ class ApiConstants {
     return '$baseUrl/table/all-table-running-compained/1';
   }
 
-  //forfetchingalltables
+  //forfetchingorderdetails
   static String getfetchOrderMasterPath(String baseUrl) {
     return '$baseUrl/ordermaster/get-ordermaster';
+  }
+
+  //forfetchingbilldetails
+  static String getBillDetailsPath(String baseUrl) {
+    return '$baseUrl/ordermaster/get-bill-details';
+  }
+
+  //forfinishorder
+  static String getFinishOrderPath(String baseUrl) {
+    return '$baseUrl/salesmaster/save-salesfromorderNew';
+  }
+
+  //forfinishorder
+  static String getWindowsPrintpdfPath(String baseUrl) {
+    return '$baseUrl/settings/save-windows-pdf-print';
+  }
+
+  //forupdateordermasterwithtoken
+  static String getUpdateOrderMasterWithTokenPath(String baseUrl) {
+    return '$baseUrl/ordermaster/update-ordermasterwithtoken';
+  }
+
+  //fortakeawayorders
+  static String getTakeawayOrdersPath(String baseUrl) {
+    return '$baseUrl/table/takeaway-runningOrders/1';
   }
 }

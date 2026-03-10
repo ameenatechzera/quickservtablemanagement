@@ -2,10 +2,8 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/entities/order_save_entity.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/entities/sale_details_bymasterid_entity.dart';
-import 'package:quickservtablemanagement/fetaures/sale/domain/entities/sale_save_response_entity.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/order_save_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/parameters/sales_details_request_parameter.dart';
-import 'package:quickservtablemanagement/fetaures/sale/domain/repositories/sale_repository.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/sales_detailsbymasterid_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/sale/domain/usecases/save_order_usecase.dart';
 
@@ -29,7 +27,7 @@ class SaleCubit extends Cubit<SaleState> {
   bool get isPriceEditing => _isPriceEditing;
   SaleCubit({
     //required SaveSaleUseCase saveSaleUseCase,
-   // required SalesRepository salesRepository,
+    // required SalesRepository salesRepository,
     required SalesDetailsByMasterIdUseCase salesDetailsByMasterIdUseCase,
     required SaveOrderUseCase saveOrderUseCase,
   }) : // _saveSaleUseCase = saveSaleUseCase,

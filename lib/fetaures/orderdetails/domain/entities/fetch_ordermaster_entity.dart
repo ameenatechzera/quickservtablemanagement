@@ -25,7 +25,7 @@ class OrderMasterEntity {
   final String? billStatus;
   final int? tableId;
   final int? userId;
-  final String? mergeStatus;
+  final int? mergeStatus;
   final int? mergeId;
   final String? orderType;
   final int? branchId;

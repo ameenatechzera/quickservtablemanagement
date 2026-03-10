@@ -5,6 +5,7 @@ import 'package:quickservtablemanagement/core/utils/typedef.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/datasources/table_remote_data_source.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_alltable_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_table_model.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fetch_takeawayrunning_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/data/models/fethc_runningtable_model.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/domain/repositories/tables_repository.dart';
 
@@ -44,6 +45,19 @@ class TablesRepositoryImpl implements TablesRepository {
   ResultFuture<AllTablesResponseModel> fetchAllTables() async {
     try {
       final result = await remoteDataSource.fetchAllTables();
+
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorMessageModel.statusMessage));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  ResultFuture<TakeawayOrderResponseModel> fetchTakeawayOrders() async {
+    try {
+      final result = await remoteDataSource.fetchTakeawayOrders();
 
       return Right(result);
     } on ServerException catch (e) {

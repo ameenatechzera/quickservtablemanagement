@@ -117,6 +117,18 @@ class SharedPreferenceHelper {
     return prefs.getString('company_phone');
   }
 
+  /// ------------------ USER ID ------------------
+
+  Future<void> setUserId(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('user_id', userId);
+  }
+
+  Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('user_id');
+  }
+
   /// ------------------ setStaffName ------------------
   Future<bool> setStaffName(String staffName) async {
     final prefs = await SharedPreferences.getInstance();

@@ -12,7 +12,7 @@ class OrderSaveParameter {
   double cardAmount;
   double creditAmount;
   String billStatus;
-  int tableId;
+  int? tableId;
   int userId;
   int mergeStatus;
   int? mergeId;
@@ -41,7 +41,7 @@ class OrderSaveParameter {
     required this.cardAmount,
     required this.creditAmount,
     required this.billStatus,
-    required this.tableId,
+    this.tableId,
     required this.userId,
     required this.mergeStatus,
     this.mergeId,

@@ -20,9 +20,17 @@ import 'package:quickservtablemanagement/fetaures/sale/presentation/widgets/top_
 import 'package:quickservtablemanagement/services/shared_preference_helper.dart';
 
 class SaleScreen extends StatefulWidget {
-  final int tableId;
-  final String tableName;
-  const SaleScreen({super.key, required this.tableId, required this.tableName});
+  final int? tableId;
+  final String? tableName;
+  final int? orderMasterId;
+  final String? orderNo;
+  const SaleScreen({
+    super.key,
+    this.tableId,
+    this.tableName,
+    this.orderMasterId,
+    this.orderNo,
+  });
 
   @override
   State<SaleScreen> createState() => _SaleScreenState();
@@ -2448,6 +2456,8 @@ class _SaleScreenState extends State<SaleScreen>
                             context,
                             tableId: widget.tableId,
                             tableName: widget.tableName,
+                            orderMasterId: widget.orderMasterId,
+                            orderNo: widget.orderNo,
                           ),
                         ),
                       );

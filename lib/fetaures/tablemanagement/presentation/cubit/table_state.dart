@@ -68,3 +68,23 @@ class AllTableError extends TableState {
   @override
   List<Object?> get props => [message];
 }
+
+class TakeawayOrderLoading extends TableState {}
+
+class TakeawayOrderLoaded extends TableState {
+  final TakeawayOrderResponseModel response;
+
+  const TakeawayOrderLoaded(this.response);
+
+  @override
+  List<Object?> get props => [response];
+}
+
+class TakeawayOrderError extends TableState {
+  final String message;
+
+  const TakeawayOrderError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

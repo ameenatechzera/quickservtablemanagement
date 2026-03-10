@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickservtablemanagement/core/theme/colors.dart';
-import 'package:quickservtablemanagement/fetaures/bills/presentation/screens/bill_screen.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/billdetails_screen.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/orderdetails_screen.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/screens/sale_screen.dart';
 import 'package:quickservtablemanagement/fetaures/settings/presentation/screens/settings_dashboard.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/screens/takeaway_screen.dart';
 
 class TableHomescreen extends StatefulWidget {
   const TableHomescreen({super.key});
@@ -20,6 +21,17 @@ class _TableHomescreenState extends State<TableHomescreen>
   final ValueNotifier<int> selectedBottomIndex = ValueNotifier<int>(0);
 
   late TabController _tabController;
+  void refreshCurrentTab() {
+    final cubit = context.read<TableCubit>();
+
+    if (_tabController.index == 0) {
+      cubit.fetchAllTables();
+    } else if (_tabController.index == 1) {
+      cubit.fetchTables();
+    } else if (_tabController.index == 2) {
+      cubit.fetchRunningTables();
+    }
+  }
 
   @override
   void initState() {
@@ -47,6 +59,14 @@ class _TableHomescreenState extends State<TableHomescreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _handleDineInToggle(bool value) {
+    isDineIn.value = value;
+
+    if (value) {
+      refreshCurrentTab();
+    }
   }
 
   @override
@@ -93,131 +113,133 @@ class _TableHomescreenState extends State<TableHomescreen>
                   ),
 
                 if (index == 0) ...[
-                  ValueListenableBuilder<bool>(
-                    valueListenable: isDineIn,
-                    builder: (context, value, _) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => BillsScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.ac_unit),
-                          ),
-                          _toggleButton(
-                            text: "Dine-In",
-                            selected: value,
-                            onTap: () => isDineIn.value = true,
-                          ),
-                          const SizedBox(width: 12),
-                          _toggleButton(
-                            text: "Takeaway",
-                            selected: !value,
-                            onTap: () => isDineIn.value = false,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.orange,
-                    labelColor: Colors.black,
-                    unselectedLabelColor: Colors.grey,
-                    tabs: const [
-                      Tab(text: "All"),
-                      Tab(text: "Available Tables"),
-                      Tab(text: "Running Tables"),
-                    ],
-                  ),
-
                   Expanded(
-                    child: BlocBuilder<TableCubit, TableState>(
-                      builder: (context, state) {
-                        if (state is TableLoading ||
-                            state is RunningTableLoading ||
-                            state is AllTableLoading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        if (state is TableError) {
-                          return Center(child: Text(state.message));
-                        }
-
-                        if (state is RunningTableError) {
-                          return Center(child: Text(state.message));
-                        }
-                        if (state is AllTableError) {
-                          return Center(child: Text(state.message));
-                        }
-                        if (state is TableLoaded) {
-                          final tables = state.response.tables;
-
-                          /// 🔥 FILTER ONLY status == 0 for Available tab
-                          final filteredTables = <String, dynamic>{};
-
-                          tables?.forEach((section, tableList) {
-                            final filteredList = (tableList as List)
-                                .where((table) => table.status == 0)
-                                .toList();
-
-                            if (filteredList.isNotEmpty) {
-                              filteredTables[section] = filteredList;
-                            }
-                          });
-
-                          return TabBarView(
-                            controller: _tabController,
-                            children: [
-                              SizedBox(),
-                              tabContent(filteredTables),
-                              const SizedBox(),
-                            ],
-                          );
-                        }
-
-                        if (state is RunningTableLoaded) {
-                          final tables = state.data.tables;
-
-                          return TabBarView(
-                            controller: _tabController,
-                            children: [
-                              const SizedBox(),
-                              const SizedBox(),
-                              tabContent(tables),
-                            ],
-                          );
-                        }
-                        if (state is AllTableLoaded) {
-                          final tables = state.response.tables;
-
-                          return TabBarView(
-                            controller: _tabController,
-                            children: [
-                              tabContent(tables),
-                              const SizedBox(),
-                              const SizedBox(),
-                            ],
-                          );
-                        }
-                        return const SizedBox();
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: isDineIn,
+                      builder: (context, value, _) {
+                        return Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _toggleButton(
+                                  text: "Dine-In",
+                                  selected: value,
+                                  onTap: () => _handleDineInToggle(true),
+                                ),
+                                const SizedBox(width: 12),
+                                _toggleButton(
+                                  text: "Takeaway",
+                                  selected: !value,
+                                  onTap: () => _handleDineInToggle(false),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: value
+                                  ? _buildDineInContent()
+                                  : const TakeawayScreen(),
+                            ),
+                          ],
+                        );
                       },
                     ),
                   ),
-                ],
 
-                if (index == 1)
-                  Expanded(child: Center(child: SettingsScreen())),
+                  //   const SizedBox(height: 10),
+
+                  //   TabBar(
+                  //     controller: _tabController,
+                  //     indicatorColor: Colors.orange,
+                  //     labelColor: Colors.black,
+                  //     unselectedLabelColor: Colors.grey,
+                  //     tabs: const [
+                  //       Tab(text: "All"),
+                  //       Tab(text: "Available Tables"),
+                  //       Tab(text: "Running Tables"),
+                  //     ],
+                  //   ),
+
+                  //   Expanded(
+                  //     child: BlocBuilder<TableCubit, TableState>(
+                  //       builder: (context, state) {
+                  //         if (state is TableLoading ||
+                  //             state is RunningTableLoading ||
+                  //             state is AllTableLoading) {
+                  //           return const Center(
+                  //             child: CircularProgressIndicator(),
+                  //           );
+                  //         }
+
+                  //         if (state is TableError) {
+                  //           return Center(child: Text(state.message));
+                  //         }
+
+                  //         if (state is RunningTableError) {
+                  //           return Center(child: Text(state.message));
+                  //         }
+                  //         if (state is AllTableError) {
+                  //           return Center(child: Text(state.message));
+                  //         }
+                  //         if (state is TableLoaded) {
+                  //           final tables = state.response.tables;
+
+                  //           /// 🔥 FILTER ONLY status == 0 for Available tab
+                  //           final filteredTables = <String, dynamic>{};
+
+                  //           tables?.forEach((section, tableList) {
+                  //             final filteredList = (tableList as List)
+                  //                 .where((table) => table.status == 0)
+                  //                 .toList();
+
+                  //             if (filteredList.isNotEmpty) {
+                  //               filteredTables[section] = filteredList;
+                  //             }
+                  //           });
+
+                  //           return TabBarView(
+                  //             controller: _tabController,
+                  //             children: [
+                  //               SizedBox(),
+                  //               tabContent(filteredTables),
+                  //               const SizedBox(),
+                  //             ],
+                  //           );
+                  //         }
+
+                  //         if (state is RunningTableLoaded) {
+                  //           final tables = state.data.tables;
+
+                  //           return TabBarView(
+                  //             controller: _tabController,
+                  //             children: [
+                  //               const SizedBox(),
+                  //               const SizedBox(),
+                  //               tabContent(tables),
+                  //             ],
+                  //           );
+                  //         }
+                  //         if (state is AllTableLoaded) {
+                  //           final tables = state.response.tables;
+
+                  //           return TabBarView(
+                  //             controller: _tabController,
+                  //             children: [
+                  //               tabContent(tables),
+                  //               const SizedBox(),
+                  //               const SizedBox(),
+                  //             ],
+                  //           );
+                  //         }
+                  //         return const SizedBox();
+                  //       },
+                  //     ),
+                  //   ),
+                  //],
+                  if (index == 1)
+                    Expanded(child: Center(child: SettingsScreen())),
+                ],
               ],
             );
           },
@@ -255,6 +277,98 @@ class _TableHomescreenState extends State<TableHomescreen>
           );
         },
       ),
+    );
+  }
+
+  Widget _buildDineInContent() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.orange,
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.grey,
+          tabs: const [
+            Tab(text: "All"),
+            Tab(text: "Available Tables"),
+            Tab(text: "Running Tables"),
+          ],
+        ),
+
+        Expanded(
+          child: BlocBuilder<TableCubit, TableState>(
+            builder: (context, state) {
+              if (state is TableLoading ||
+                  state is RunningTableLoading ||
+                  state is AllTableLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (state is TableError) {
+                return Center(child: Text(state.message));
+              }
+
+              if (state is RunningTableError) {
+                return Center(child: Text(state.message));
+              }
+              if (state is AllTableError) {
+                return Center(child: Text(state.message));
+              }
+              if (state is TableLoaded) {
+                final tables = state.response.tables;
+
+                /// 🔥 FILTER ONLY status == 0 for Available tab
+                final filteredTables = <String, dynamic>{};
+
+                tables?.forEach((section, tableList) {
+                  final filteredList = (tableList as List)
+                      .where((table) => table.status == 0)
+                      .toList();
+
+                  if (filteredList.isNotEmpty) {
+                    filteredTables[section] = filteredList;
+                  }
+                });
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    SizedBox(),
+                    tabContent(filteredTables),
+                    const SizedBox(),
+                  ],
+                );
+              }
+
+              if (state is RunningTableLoaded) {
+                final tables = state.data.tables;
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    const SizedBox(),
+                    const SizedBox(),
+                    tabContent(tables),
+                  ],
+                );
+              }
+              if (state is AllTableLoaded) {
+                final tables = state.response.tables;
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    tabContent(tables),
+                    const SizedBox(),
+                    const SizedBox(),
+                  ],
+                );
+              }
+              return const SizedBox();
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -336,6 +450,7 @@ class _TableHomescreenState extends State<TableHomescreen>
         children: tables.entries.map((entry) {
           final sectionName = entry.key;
           final tableList = entry.value as List;
+          final isRunning = tableList.first.status == 1;
 
           // final filtered = tableList.where((table) {
           //   if (filter == "available") return table.status == 0;
@@ -351,7 +466,7 @@ class _TableHomescreenState extends State<TableHomescreen>
               const SizedBox(height: 10),
               _sectionTitle(sectionName),
               const SizedBox(height: 12),
-              _tableGrid(tableList),
+              _tableGrid(tableList, isRunning: isRunning),
               const SizedBox(height: 20),
             ],
           );
@@ -378,48 +493,95 @@ class _TableHomescreenState extends State<TableHomescreen>
     );
   }
 
-  static Widget _tableGrid(List<dynamic> tables) {
+  Widget _tableGrid(List<dynamic> tables, {required bool isRunning}) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: tables.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.85,
+        childAspectRatio: isRunning ? 0.89 : 1.2,
       ),
       itemBuilder: (context, index) {
-        return _tableCard(context, tables[index]);
+        return tableCard(context, tables[index]);
       },
     );
   }
 
-  static Widget _tableCard(BuildContext context, dynamic table) {
+  Widget tableCard(BuildContext context, dynamic table) {
     final isRunning = table.status == 1;
 
     return GestureDetector(
       onTap: () {
         if (isRunning) {
-          /// 🔴 If table is running → Go to Order Details Screen
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => OrderDetailsScreen(
-                tableId: table.tableId!,
-                // orderMasterId: table.OrderMasterId,
-                // tableName: table.tableNumber!,
-              ),
-            ),
-          );
+          final orders = table.orders ?? [];
+
+          if (orders.length == 1) {
+            // Print the orderMasterId
+            print(
+              "Single Order → orderMasterId: ${orders.first.orderMasterId}",
+            );
+            final order = orders.first;
+
+            /// Single order → Order Details
+            Navigator.of(context)
+                .push(
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailsScreen(
+                      tableId: table.tableId!,
+                      orderMasterId: order.orderMasterId!,
+                    ),
+                  ),
+                )
+                .then((_) => refreshCurrentTab());
+          } else if (orders.length > 1) {
+            // Print all orderMasterIds for debugging
+            print(
+              "Multiple Orders → orderMasterIds: ${orders.map((o) => o.orderMasterId).toList()}",
+            );
+
+            /// Multiple orders → Bill Details
+            Navigator.of(context)
+                .push(
+                  MaterialPageRoute(
+                    builder: (_) => BillsScreen(tableId: table.tableId!),
+                  ),
+                )
+                .then((_) => refreshCurrentTab());
+            // /// 🔴 If table is running → Go to Order Details Screen
+            // Navigator.of(context).push(
+            //   MaterialPageRoute(
+            //     builder: (_) => BillsScreen(
+            //       tableId: table.tableId!,
+            //       // orderMasterId: table.OrderMasterId,
+            //       // tableName: table.tableNumber!,
+            //     ),
+            //   ),
+            // );
+            // context.read<BilldetailsCubit>().fetchBillDetails(
+            //   FetchBillDetailsParameter(
+            //     fromDate: "2026-02-10",
+            //     toDate: "2026-03-05",
+            //     userId: 1,
+            //     tableId: table.tableId!,
+            //     orderType: "dinein",
+            //     branchId: 1,
+            //   ),
+            // );
+          }
         } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SaleScreen(
-                tableId: table.tableId!,
-                tableName: table.tableNumber!,
-              ),
-            ),
-          );
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (_) => SaleScreen(
+                    tableId: table.tableId!,
+                    tableName: table.tableNumber!,
+                  ),
+                ),
+              )
+              .then((_) => refreshCurrentTab());
         }
       },
       child: Container(
@@ -461,7 +623,7 @@ class _TableHomescreenState extends State<TableHomescreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -486,7 +648,7 @@ class _TableHomescreenState extends State<TableHomescreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     padding: EdgeInsets.zero,
                     elevation: 0,
@@ -500,11 +662,15 @@ class _TableHomescreenState extends State<TableHomescreen>
                           tableName: table.tableNumber!,
                         ), // your sales screen
                       ),
-                    );
+                    ).then((_) => refreshCurrentTab());
                   },
                   child: const Text(
                     "+ Add",
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
                   ),
                 ),
               ),

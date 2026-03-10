@@ -7,8 +7,10 @@ import 'package:quickservtablemanagement/fetaures/cart/presentation/screens/cart
 final ValueNotifier<bool> showCartBar = ValueNotifier(false);
 Widget cartBottomBar(
   BuildContext context, {
-  required int tableId,
-  required String tableName,
+  int? tableId,
+  String? tableName,
+  int? orderMasterId,
+  String? orderNo,
 }) {
   return MediaQuery(
     data: MediaQuery.of(context).copyWith(
@@ -86,6 +88,7 @@ Widget cartBottomBar(
                         return CartScreen(
                           tableId: tableId,
                           tableName: tableName,
+                          orderMasterId: orderMasterId,
                         );
                       },
                     ),

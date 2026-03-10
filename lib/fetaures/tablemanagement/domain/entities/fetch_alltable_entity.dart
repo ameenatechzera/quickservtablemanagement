@@ -19,10 +19,7 @@ class AllTableEntity {
   final String? modifiedDate;
   final String? modifiedUser;
   final bool? isRunning;
-  final int? orderMasterId;
-  final String? orderNo;
-  final String? amount;
-
+  final List<OrderDetailsEntity>? orders;
   AllTableEntity({
     this.tableId,
     this.tableNumber,
@@ -35,8 +32,14 @@ class AllTableEntity {
     this.modifiedDate,
     this.modifiedUser,
     this.isRunning,
-    this.orderMasterId,
-    this.orderNo,
-    this.amount,
+    this.orders,
   });
+}
+
+class OrderDetailsEntity {
+  final int? orderMasterId;
+  final String? orderNo;
+  final double? grandTotal;
+
+  OrderDetailsEntity({this.orderMasterId, this.orderNo, this.grandTotal});
 }
