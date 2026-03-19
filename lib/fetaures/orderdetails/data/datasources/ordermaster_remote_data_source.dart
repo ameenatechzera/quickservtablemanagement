@@ -5,9 +5,12 @@ import 'package:quickservtablemanagement/core/errors/error_message_model.dart';
 import 'package:quickservtablemanagement/core/errors/exceptions.dart';
 import 'package:quickservtablemanagement/core/models/master_api_response_model.dart';
 import 'package:quickservtablemanagement/core/network/api_endpoints.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_orderdetails_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_ordermaster_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/finish_order_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/update_ordermasterwithtoken_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/cancel_order_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_orderdetails_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_ordermaster_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/finish_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/print_parameter.dart';
@@ -23,6 +26,10 @@ abstract class OrderMasterRemoteDataSource {
   Future<UpdateOrderMasterWithTokenResponseModel> updateOrderMasterWithToken(
     UpdateOrderMasterWithTokenParameter parameter,
   );
+  Future<FetchOrderDetailsResponseModel> fetchOrderDetails(
+    FetchOrderDetailsParameter parameter,
+  );
+  Future<ApiResponseModel> cancelOrder(CancelOrderParameter parameter);
 }
 
 class OrderMasterRemoteDataSourceImpl implements OrderMasterRemoteDataSource {
@@ -182,61 +189,6 @@ class OrderMasterRemoteDataSourceImpl implements OrderMasterRemoteDataSource {
     }
   }
 
-  //   @override
-  //   Future<UpdateOrderMasterWithTokenResponseModel> updateOrderMasterWithToken(
-  //     UpdateOrderMasterWithTokenParameter parameter,
-  //   ) async {
-  //     try {
-  //       final baseUrl = await SharedPreferenceHelper().getBaseUrl();
-
-  //       if (baseUrl == null || baseUrl.isEmpty) {
-  //         throw Exception("Base URL not set");
-  //       }
-
-  //       final url = ApiConstants.getUpdateOrderMasterWithTokenPath(baseUrl);
-  //       print("🔹 Update OrderMaster With Token URL: $url");
-
-  //       final dbName = await SharedPreferenceHelper().getDatabaseName();
-  //       final token = await SharedPreferenceHelper().getToken() ?? "";
-
-  //       if (token.isEmpty) {
-  //         throw Exception("Token missing! Please login again.");
-  //       }
-
-  //       final body = parameter.toJson();
-  //       print("🔹 Request Body: $body");
-
-  //       final response = await dio.post(
-  //         url,
-  //         data: body,
-  //         options: Options(
-  //           contentType: "application/json",
-  //           headers: {
-  //             "Accept": "application/json",
-  //             "Authorization": "Bearer $token",
-  //             "X-Database-Name": dbName,
-  //           },
-  //         ),
-  //       );
-
-  //       print("🔹 Status Code: ${response.statusCode}");
-  //       print("🔹 Response Data: ${response.data}");
-
-  //       if (response.statusCode == 200 || response.statusCode == 201) {
-  //         return UpdateOrderMasterWithTokenResponseModel.fromJson(response.data);
-  //       } else {
-  //         throw ServerException(
-  //           errorMessageModel: ErrorMessageModel.fromJson(response.data),
-  //         );
-  //       }
-  //     } catch (e, stacktrace) {
-  //       print("❌ Exception during updateOrderMasterWithToken: $e");
-  //       print("Stacktrace: $stacktrace");
-  //       rethrow;
-  //     }
-  //   }
-  // }
-
   @override
   Future<UpdateOrderMasterWithTokenResponseModel> updateOrderMasterWithToken(
     UpdateOrderMasterWithTokenParameter parameter,
@@ -301,6 +253,124 @@ class OrderMasterRemoteDataSourceImpl implements OrderMasterRemoteDataSource {
     } catch (e, stacktrace) {
       print("❌ General Exception: $e");
       print("📍 Stacktrace: $stacktrace");
+      rethrow;
+    }
+  }
+
+  @override
+  Future<FetchOrderDetailsResponseModel> fetchOrderDetails(
+    FetchOrderDetailsParameter parameter,
+  ) async {
+    try {
+      final baseUrl = await SharedPreferenceHelper().getBaseUrl();
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("Base URL not set");
+      }
+
+      final url = ApiConstants.getFetchOrderDetailsPath(baseUrl);
+      print("🔹 Fetch Order Details URL: $url");
+
+      final dbName = await SharedPreferenceHelper().getDatabaseName();
+      final token = await SharedPreferenceHelper().getToken() ?? "";
+
+      if (token.isEmpty) {
+        throw Exception("Token missing! Please login again.");
+      }
+
+      final body = parameter.toJson();
+      print("📦 Request Body: $body");
+
+      final response = await dio.post(
+        url,
+        data: body,
+        options: Options(
+          contentType: "application/json",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer $token",
+            "X-Database-Name": dbName,
+          },
+        ),
+      );
+
+      print("🔹 Status Code: ${response.statusCode}");
+      print("🔹 Response Data: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return FetchOrderDetailsResponseModel.fromJson(response.data);
+      } else {
+        throw ServerException(
+          errorMessageModel: ErrorMessageModel.fromJson(response.data),
+        );
+      }
+    } on DioException catch (e) {
+      print("🚨 DIO ERROR");
+      print("🔴 Status Code: ${e.response?.statusCode}");
+      print("🔴 Response Data: ${e.response?.data}");
+
+      throw Exception(e.response?.data ?? e.message);
+    } catch (e, stacktrace) {
+      print("❌ Exception during fetchOrderDetails: $e");
+      print("Stacktrace: $stacktrace");
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ApiResponseModel> cancelOrder(CancelOrderParameter parameter) async {
+    try {
+      final baseUrl = await SharedPreferenceHelper().getBaseUrl();
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("Base URL not set");
+      }
+
+      final url = ApiConstants.getCancelOrderPath(baseUrl);
+      print("🔹 Cancel Order URL: $url");
+
+      final dbName = await SharedPreferenceHelper().getDatabaseName();
+      final token = await SharedPreferenceHelper().getToken() ?? "";
+
+      if (token.isEmpty) {
+        throw Exception("Token missing! Please login again.");
+      }
+
+      final body = parameter.toJson();
+      print("📦 Request Body: $body");
+
+      final response = await dio.post(
+        url,
+        data: body,
+        options: Options(
+          contentType: "application/json",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer $token",
+            "X-Database-Name": dbName,
+          },
+        ),
+      );
+
+      print("🔹 Status Code: ${response.statusCode}");
+      print("🔹 Response Data: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ApiResponseModel.fromJson(response.data);
+      } else {
+        throw ServerException(
+          errorMessageModel: ErrorMessageModel.fromJson(response.data),
+        );
+      }
+    } on DioException catch (e) {
+      print("🚨 DIO ERROR");
+      print("🔴 Status Code: ${e.response?.statusCode}");
+      print("🔴 Response Data: ${e.response?.data}");
+
+      throw Exception(e.response?.data ?? e.message);
+    } catch (e, stacktrace) {
+      print("❌ Exception during cancelOrder: $e");
+      print("Stacktrace: $stacktrace");
       rethrow;
     }
   }

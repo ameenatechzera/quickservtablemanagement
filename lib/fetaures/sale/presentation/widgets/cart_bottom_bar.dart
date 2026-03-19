@@ -70,39 +70,75 @@ Widget cartBottomBar(
               ),
 
               const Spacer(),
-
-              // VIEW CART TEXT
-              TextButton(
-                child: const Text(
-                  "View Cart",
-                  style: TextStyle(
-                    color: Color(0xFFEAB307),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) {
-                        return CartScreen(
+              SizedBox(
+                height: 48, // adjust to match your bar height
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => CartScreen(
                           tableId: tableId,
                           tableName: tableName,
                           orderMasterId: orderMasterId,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
+                        ),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        "View Cart",
+                        style: TextStyle(
+                          color: Color(0xFFEAB307),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
 
-              // BAG ICON
-              const Icon(
-                Icons.shopping_bag_outlined,
-                color: Color(0xFFEAB307),
-                size: 22,
+                      SizedBox(width: 8),
+
+                      Icon(
+                        Icons.shopping_bag_outlined,
+                        color: Color(0xFFEAB307),
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              // // VIEW CART TEXT
+              // TextButton(
+              //   child: const Text(
+              //     "View Cart",
+              //     style: TextStyle(
+              //       color: Color(0xFFEAB307),
+              //       fontSize: 18,
+              //       fontWeight: FontWeight.w700,
+              //     ),
+              //   ),
+              //   onPressed: () {
+              //     Navigator.of(context).push(
+              //       MaterialPageRoute(
+              //         builder: (context) {
+              //           return CartScreen(
+              //             tableId: tableId,
+              //             tableName: tableName,
+              //             orderMasterId: orderMasterId,
+              //           );
+              //         },
+              //       ),
+              //     );
+              //   },
+              // ),
+              // const SizedBox(width: 8),
+
+              // // BAG ICON
+              // const Icon(
+              //   Icons.shopping_bag_outlined,
+              //   color: Color(0xFFEAB307),
+              //   size: 22,
+              // ),
             ],
           ),
         );

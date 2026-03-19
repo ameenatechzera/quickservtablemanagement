@@ -283,4 +283,14 @@ class ApiConstants {
   static String getTakeawayOrdersPath(String baseUrl) {
     return '$baseUrl/table/takeaway-runningOrders/1';
   }
+
+  //forfetchingorderdetails
+  static String getFetchOrderDetailsPath(String baseUrl) {
+    return '$baseUrl/ordermaster/get-orderdetailsbytoken';
+  }
+
+  //tocancelorder
+  static String getCancelOrderPath(String baseUrl) {
+    return '$baseUrl/ordermaster/cancel-ordermaster';
+  }
 }

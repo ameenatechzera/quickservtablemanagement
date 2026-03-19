@@ -4,9 +4,12 @@ import 'package:quickservtablemanagement/core/errors/failure.dart';
 import 'package:quickservtablemanagement/core/models/master_api_response_model.dart';
 import 'package:quickservtablemanagement/core/utils/typedef.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/datasources/ordermaster_remote_data_source.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_orderdetails_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_ordermaster_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/finish_order_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/update_ordermasterwithtoken_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/cancel_order_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_orderdetails_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_ordermaster_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/finish_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/print_parameter.dart';
@@ -72,6 +75,34 @@ class OrderMasterRepositoryImpl implements OrderMasterRepository {
       final result = await remoteDataSource.updateOrderMasterWithToken(
         parameter,
       );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorMessageModel.statusMessage));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  ResultFuture<FetchOrderDetailsResponseModel> fetchOrderDetails(
+    FetchOrderDetailsParameter parameter,
+  ) async {
+    try {
+      final result = await remoteDataSource.fetchOrderDetails(parameter);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorMessageModel.statusMessage));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  ResultFuture<ApiResponseModel> cancelOrder(
+    CancelOrderParameter parameter,
+  ) async {
+    try {
+      final result = await remoteDataSource.cancelOrder(parameter);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorMessageModel.statusMessage));

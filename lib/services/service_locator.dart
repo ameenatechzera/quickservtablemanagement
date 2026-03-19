@@ -26,7 +26,9 @@ import 'package:quickservtablemanagement/fetaures/orderdetails/data/repositories
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/repositories/ordermaster_repository_impl.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/repositories/billdetails_repository.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/repositories/ordermaster_repository.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/cancel_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_billdetails_usecase.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_orderdetails_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_ordermaster_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/finish_order_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/print_pdf_usecase.dart';
@@ -341,6 +343,8 @@ class ServiceLocator {
         finishOrderUseCase: sl(),
         printPdfUseCase: sl(),
         updateOrderMasterWithTokenUseCase: sl(),
+        fetchOrderDetailsUseCase: sl(),
+        cancelOrderUseCase: sl(),
       ),
     );
 
@@ -349,6 +353,8 @@ class ServiceLocator {
     sl.registerLazySingleton(() => FinishOrderUseCase(sl()));
     sl.registerLazySingleton(() => PrintPdfUseCase(sl()));
     sl.registerLazySingleton(() => UpdateOrderMasterWithTokenUseCase(sl()));
+    sl.registerLazySingleton(() => FetchOrderDetailsUseCase(sl()));
+    sl.registerLazySingleton(() => CancelOrderUseCase(sl()));
 
     // Data Source
     sl.registerLazySingleton<OrderMasterRemoteDataSource>(

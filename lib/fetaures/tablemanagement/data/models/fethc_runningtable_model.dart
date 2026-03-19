@@ -82,11 +82,11 @@ class FetchRunningTableResponseModel extends FetchRunningTableEntity {
   factory FetchRunningTableResponseModel.fromJson(Map<String, dynamic> json) {
     Map<String, List<RunningTableDetailsModel>> tableMap = {};
 
-    if (json['tables'] != null) {
-      json['tables'].forEach((key, value) {
-        tableMap[key] = List<RunningTableDetailsModel>.from(
-          value.map((x) => RunningTableDetailsModel.fromJson(x)),
-        );
+    if (json['tables'] != null && json['tables'] is Map) {
+      (json['tables'] as Map<String, dynamic>).forEach((key, value) {
+        tableMap[key] = (value as List)
+            .map((e) => RunningTableDetailsModel.fromJson(e))
+            .toList();
       });
     }
 

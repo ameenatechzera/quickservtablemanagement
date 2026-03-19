@@ -74,7 +74,6 @@ class CompanyModel {
 
   factory CompanyModel.fromJson(Map<String, dynamic> json) {
     return CompanyModel(
-      // NOTE: API has "CompanyId " (with space). Use exact key.
       companyId: json['CompanyId '] is int
           ? json['CompanyId ']
           : int.tryParse((json['CompanyId '] ?? '0').toString()) ?? 0,
@@ -88,7 +87,6 @@ class CompanyModel {
       web: json['Web'],
       currency: json['Currency'],
       currencySymbol: json['CurrencySymbol'],
-      // NOTE: API has "SerialNumber " (with space).
       serialNumber: json['SerialNumber '] ?? '',
       databaseName: json['DatabaseName'],
       vatNumber: json['VATNumber'],

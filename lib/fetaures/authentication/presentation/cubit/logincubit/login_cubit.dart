@@ -27,7 +27,6 @@ class LoginCubit extends Cubit<LoginState> {
         },
       );
     } catch (e, stacktrace) {
-      // Handle unexpected exceptions
       print('❌ Exception during loginUser: $e');
       print('Stacktrace: $stacktrace');
       emit(LoginFailure('An unexpected error occurred'));

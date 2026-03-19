@@ -2448,7 +2448,7 @@ class _SaleScreenState extends State<SaleScreen>
                       return Positioned(
                         left: 20,
                         right: 20,
-                        bottom: 80,
+                        bottom: 30,
                         child: MediaQuery.removeViewInsets(
                           context: context,
                           removeBottom: true,

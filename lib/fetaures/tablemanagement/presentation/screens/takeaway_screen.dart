@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/orderdetails_screen.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/token%20_listing_screen.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/screens/sale_screen.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
 
@@ -63,7 +63,7 @@ class TakeawayScreen extends StatelessWidget {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) {
-                                return OrderDetailsScreen(
+                                return TokenListingScreen(
                                   tableId: null,
                                   orderMasterId: orderMasterId!,
                                 );
@@ -73,7 +73,7 @@ class TakeawayScreen extends StatelessWidget {
                         },
                         child: _orderCard(
                           tokenNo: order.tokenNo ?? "",
-                          customerName: order.customerName ?? "",
+                          customerName: order.customerName ?? "No Name",
                           itemCount: order.phoneNo ?? "",
                           amount: "₹${order.grandTotal ?? "0"}",
                         ),

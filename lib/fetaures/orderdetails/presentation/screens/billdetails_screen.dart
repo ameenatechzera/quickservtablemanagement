@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_billdetails_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/billdetails/billdetails_cubit.dart';
-import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/orderdetails_screen.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/token%20_listing_screen.dart';
 import 'package:quickservtablemanagement/services/shared_preference_helper.dart';
 
 class BillsScreen extends StatelessWidget {
@@ -83,7 +83,7 @@ class BillsScreen extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) {
-                          return OrderDetailsScreen(
+                          return TokenListingScreen(
                             tableId: tableId,
                             orderMasterId: b.orderMasterId!,
                           );

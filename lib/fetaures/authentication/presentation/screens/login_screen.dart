@@ -25,10 +25,8 @@ class LoginScreen extends StatelessWidget {
   final TextEditingController usernameCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController codeCtrl = TextEditingController();
-  // Track processing (register/login/post-login APIs)
   final ValueNotifier<bool> isProcessing = ValueNotifier<bool>(false);
 
-  /// ✅ Dynamic message shown in the SAME button (under your ThreeDotLoader)
   final ValueNotifier<String> loadingMsg = ValueNotifier<String>(
     "Loading, please wait...",
   );
@@ -87,21 +85,6 @@ class LoginScreen extends StatelessWidget {
                 );
               } catch (_) {}
 
-              // // final logoutStatus = await SharedPreferenceHelper()
-              // //     .getLogoutStatus();
-
-              // // //  EXPIRY CHECK FIRST (BEFORE ANYTHING)
-              // loadingMsg.value = "Checking expirydate...";
-              // final expired = await isLicenseExpired();
-              // if (expired) {
-              //   loadingMsg.value = "Loading, please wait...";
-              //   showExpiryDialog(context);
-              //   isProcessing.value = false;
-              //   return; //  STOP EVERYTHING
-              // }
-
-              // /// After register -> trigger login
-              // loadingMsg.value = "Logging in...";
               context.read<LoginCubit>().loginUser(
                 LoginRequest(
                   username: usernameCtrl.text,
@@ -268,18 +251,6 @@ class LoginScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
 
-                          /// Title
-                          // const Text(
-                          //   'Login',
-                          //   style: TextStyle(
-                          //     fontSize: 24,
-                          //     fontWeight: FontWeight.bold,
-                          //     color: AppColors.black,
-                          //   ),
-                          // ),
-                          //
-                          // const SizedBox(height: 32),
-
                           /// Lock Icons
                           Loginlocks(),
                           const SizedBox(height: 16),
@@ -380,18 +351,7 @@ class LoginScreen extends StatelessWidget {
                                         fontSize: 18,
                                       ),
                                     ),
-                              // child: processing
-                              //     ? Text('processing.......')
-                              //     : const Text(
-                              //         'Login',
-                              //         style: TextStyle(
-                              //           color: AppColors.black,
-                              //           fontSize: 18,
-                              //         ),
-                              //       ),
                             ),
-
-                            // const SizedBox(height: 16),
                           ),
                         ],
                       );

@@ -3,13 +3,18 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:quickservtablemanagement/core/models/master_api_response_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_orderdetails_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/fetch_ordermaster_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/finish_order_model.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/data/models/update_ordermasterwithtoken_model.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/cancel_order_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_orderdetails_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_ordermaster_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/finish_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/print_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/update_ordermasterwithtoken_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/cancel_order_parameter.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_orderdetails_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/fetch_ordermaster_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/finish_order_usecase.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/usecases/print_pdf_usecase.dart';
@@ -22,16 +27,22 @@ class OrderMasterCubit extends Cubit<OrderMasterState> {
   final FinishOrderUseCase _finishOrderUseCase;
   final PrintPdfUseCase _printPdfUseCase;
   final UpdateOrderMasterWithTokenUseCase _updateOrderMasterWithTokenUseCase;
+  final FetchOrderDetailsUseCase _fetchOrderDetailsUseCase;
+  final CancelOrderUseCase _cancelOrderUseCase;
   OrderMasterCubit({
     required FetchOrderMasterUseCase fetchOrderMasterUseCase,
     required FinishOrderUseCase finishOrderUseCase,
     required PrintPdfUseCase printPdfUseCase,
     required UpdateOrderMasterWithTokenUseCase
     updateOrderMasterWithTokenUseCase,
+    required FetchOrderDetailsUseCase fetchOrderDetailsUseCase,
+    required CancelOrderUseCase cancelOrderUseCase,
   }) : _fetchOrderMasterUseCase = fetchOrderMasterUseCase,
        _finishOrderUseCase = finishOrderUseCase,
        _printPdfUseCase = printPdfUseCase,
        _updateOrderMasterWithTokenUseCase = updateOrderMasterWithTokenUseCase,
+       _fetchOrderDetailsUseCase = fetchOrderDetailsUseCase,
+       _cancelOrderUseCase = cancelOrderUseCase,
        super(OrderMasterInitial());
 
   Future<void> fetchOrderMaster(FetchOrderMasterParameter parameter) async {
@@ -117,6 +128,48 @@ class OrderMasterCubit extends Cubit<OrderMasterState> {
       );
     } catch (e) {
       emit(UpdateOrderMasterError('An error occurred: $e'));
+    }
+  }
+
+  Future<void> fetchOrderDetails(FetchOrderDetailsParameter parameter) async {
+    emit(OrderDetailsLoading());
+
+    try {
+      final response = await _fetchOrderDetailsUseCase(parameter);
+
+      response.fold(
+        (failure) {
+          log("OrderDetails Failure: ${failure.message}");
+          emit(OrderDetailsError(failure.message));
+        },
+        (success) {
+          log(success.message ?? "Order details fetched successfully");
+          emit(OrderDetailsLoaded(success));
+        },
+      );
+    } catch (e) {
+      emit(OrderDetailsError('An error occurred: $e'));
+    }
+  }
+
+  Future<void> cancelOrder(CancelOrderParameter parameter) async {
+    emit(CancelOrderLoading());
+
+    try {
+      final response = await _cancelOrderUseCase(parameter);
+
+      response.fold(
+        (failure) {
+          log("CancelOrder Failure: ${failure.message}");
+          emit(CancelOrderError(failure.message));
+        },
+        (success) {
+          log(success.message);
+          emit(CancelOrderLoaded(success));
+        },
+      );
+    } catch (e) {
+      emit(CancelOrderError('An error occurred: $e'));
     }
   }
 }

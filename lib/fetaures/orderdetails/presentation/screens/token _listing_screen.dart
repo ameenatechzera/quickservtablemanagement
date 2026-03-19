@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quickservtablemanagement/core/widgets/app_toast.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/cancel_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/fetch_ordermaster_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/finish_order_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/domain/parameters/print_parameter.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/cubit/ordermaster/ordermaster_cubit.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/order_details_screen.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/screens/sale_screen.dart';
 
-class OrderDetailsScreen extends StatelessWidget {
+class TokenListingScreen extends StatelessWidget {
   final int? tableId;
   final int orderMasterId;
-  const OrderDetailsScreen({
+  const TokenListingScreen({
     super.key,
     required this.tableId,
     required this.orderMasterId,
@@ -47,188 +50,159 @@ class OrderDetailsScreen extends StatelessWidget {
         centerTitle: false,
       ),
 
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
-            child: BlocBuilder<OrderMasterCubit, OrderMasterState>(
-              builder: (context, state) {
-                if (state is OrderMasterLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
+        child: BlocBuilder<OrderMasterCubit, OrderMasterState>(
+          builder: (context, state) {
+            if (state is OrderMasterLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-                if (state is OrderMasterError) {
-                  return Center(child: Text(state.message));
-                }
+            if (state is OrderMasterError) {
+              return Center(child: Text(state.message));
+            }
 
-                if (state is OrderMasterLoaded) {
-                  final order = state.order.details;
+            if (state is OrderMasterLoaded) {
+              final order = state.order.details;
 
-                  // Top Section Data
-                  orderNo = order?.orderNo ?? "";
-                  final customerName = order?.createdUser ?? "Guest";
-                  // Order List Data
-                  final orders = order?.orderDetails ?? [];
+              // Top Section Data
+              orderNo = order?.orderNo ?? "";
+              final customerName = order?.createdUser ?? "Guest";
+              // Order List Data
+              final orders = order?.orderDetails ?? [];
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      /// Left Group (Table)
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          /// Left Group (Table)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.table_restaurant_outlined,
-                                size: 16,
-                                color: Colors.black54,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                tableId == null
-                                    ? "Takeaway"
-                                    : "Table - $tableId",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            Icons.table_restaurant_outlined,
+                            size: 16,
+                            color: Colors.black54,
                           ),
-
-                          /// Middle Group (Order)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.inventory_2_outlined,
-                                size: 16,
-                                color: Colors.black54,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                "Order No : $orderNo",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          /// Right Group (Customer)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person_outline,
-                                size: 16,
-                                color: Colors.black54,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                customerName,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          SizedBox(width: 6),
+                          Text(
+                            tableId == null ? "Takeaway" : "Table - $tableId",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 20),
-
-                      const Text(
-                        "Order Details",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
+                      /// Middle Group (Order)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 16,
+                            color: Colors.black54,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            "Order No : $orderNo",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
 
-                      const SizedBox(height: 12),
-
-                      Expanded(
-                        child: orders.isEmpty
-                            ? const Center(child: Text("No Orders Found"))
-                            : ListView.separated(
-                                itemCount: orders.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final order = orders[index];
-                                  return _orderCard(
-                                    context,
-                                    tokenNo: order.tokenNo ?? 0,
-                                    orderNo: order.orderId.toString(),
-                                    amount:
-                                        double.tryParse(
-                                          order.totalAmount ?? "0",
-                                        ) ??
-                                        0,
-                                    onTap: () {},
-                                    onPrint: () {},
-                                    onMore: () {},
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ),
-
-          // yellow + button (floating)
-          Positioned(
-            right: 18,
-            bottom: 30,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) {
-                        return SaleScreen(
-                          tableId: tableId,
-                          tableName: '',
-                          orderMasterId: orderMasterId,
-                          orderNo: orderNo,
-                        );
-                      },
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(28),
-                child: Container(
-                  height: 54,
-                  width: 54,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAB307),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
+                      /// Right Group (Customer)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 16,
+                            color: Colors.black54,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            customerName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.add, size: 28, color: Colors.black),
-                ),
-              ),
-            ),
-          ),
-        ],
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    "Order Details",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Expanded(
+                    child: orders.isEmpty
+                        ? const Center(child: Text("No Orders Found"))
+                        : ListView.separated(
+                            itemCount: orders.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final order = orders[index];
+                              final tokenid = order.tokenId;
+                              return _orderCard(
+                                context,
+                                tokenId: tokenid!,
+                                tokenNo: order.tokenNo ?? 0,
+                                orderNo: order.orderId.toString(),
+                                amount:
+                                    double.tryParse(order.totalAmount ?? "0") ??
+                                    0,
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            }
+            return const SizedBox();
+          },
+        ),
       ),
+
+      /// ✅ FIXED FLOATING BUTTON
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFEAB307),
+        child: const Icon(Icons.add, color: Colors.black),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return SaleScreen(
+                  tableId: tableId,
+                  tableName: '',
+                  orderMasterId: orderMasterId,
+                  orderNo: orderNo,
+                );
+              },
+            ),
+          );
+        },
+      ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
       // bottom actions
       bottomNavigationBar: SafeArea(
@@ -241,7 +215,13 @@ class OrderDetailsScreen extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: () {
-                    // TODO: cancel order
+                    context.read<OrderMasterCubit>().cancelOrder(
+                      CancelOrderParameter(
+                        orderMasterIds: [orderMasterId],
+                        tableIds: tableId != null ? [tableId!] : [],
+                        branchId: 1,
+                      ),
+                    );
                   },
                   child: Container(
                     color: const Color(0xFFF2F2F2),
@@ -259,6 +239,24 @@ class OrderDetailsScreen extends StatelessWidget {
               Expanded(
                 child: BlocConsumer<OrderMasterCubit, OrderMasterState>(
                   listener: (context, state) {
+                    if (state is CancelOrderLoaded) {
+                      showAnimatedToast(
+                        context,
+                        message: 'Order Cancelled Successfully',
+                        isSuccess: true,
+                      );
+
+                      Navigator.pop(context);
+                    }
+
+                    if (state is CancelOrderError) {
+                      showAnimatedToast(
+                        context,
+                        message: state.message,
+                        isSuccess: false,
+                      );
+                    }
+
                     if (state is FinishOrderLoaded) {
                       context.read<OrderMasterCubit>().printPdf(
                         PrintParameter(
@@ -404,12 +402,10 @@ class OrderDetailsScreen extends StatelessWidget {
 
   Widget _orderCard(
     BuildContext context, {
+    required int tokenId,
     required int tokenNo,
     required String orderNo,
     required double amount,
-    required VoidCallback onTap,
-    required VoidCallback onPrint,
-    required VoidCallback onMore,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -424,7 +420,26 @@ class OrderDetailsScreen extends StatelessWidget {
         ],
       ),
       child: ListTile(
-        onTap: onTap,
+        onTap: () {
+          final cubit = context.read<OrderMasterCubit>();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderDetailsScreen(
+                tokenId: tokenId,
+                branchId: 1,
+                orderNo: orderNo,
+              ),
+            ),
+          ).then((_) {
+            cubit.fetchOrderMaster(
+              FetchOrderMasterParameter(
+                orderMasterId: orderMasterId,
+                branchId: 1,
+              ),
+            );
+          });
+        },
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 10,
@@ -482,7 +497,7 @@ class OrderDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             InkWell(
-              onTap: onPrint,
+              onTap: () {},
               child: const Icon(
                 Icons.print_outlined,
                 size: 20,

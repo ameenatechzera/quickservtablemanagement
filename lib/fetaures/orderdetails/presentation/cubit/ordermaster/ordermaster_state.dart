@@ -90,3 +90,43 @@ class UpdateOrderMasterError extends OrderMasterState {
   @override
   List<Object?> get props => [message];
 }
+
+class OrderDetailsLoading extends OrderMasterState {}
+
+class OrderDetailsLoaded extends OrderMasterState {
+  final FetchOrderDetailsResponseModel response;
+
+  const OrderDetailsLoaded(this.response);
+
+  @override
+  List<Object?> get props => [response];
+}
+
+class OrderDetailsError extends OrderMasterState {
+  final String message;
+
+  const OrderDetailsError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class CancelOrderLoading extends OrderMasterState {}
+
+class CancelOrderLoaded extends OrderMasterState {
+  final ApiResponseModel response;
+
+  const CancelOrderLoaded(this.response);
+
+  @override
+  List<Object?> get props => [response];
+}
+
+class CancelOrderError extends OrderMasterState {
+  final String message;
+
+  const CancelOrderError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

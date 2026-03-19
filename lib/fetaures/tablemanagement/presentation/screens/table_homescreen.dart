@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickservtablemanagement/core/theme/colors.dart';
 import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/billdetails_screen.dart';
-import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/orderdetails_screen.dart';
+import 'package:quickservtablemanagement/fetaures/orderdetails/presentation/screens/token%20_listing_screen.dart';
 import 'package:quickservtablemanagement/fetaures/sale/presentation/screens/sale_screen.dart';
 import 'package:quickservtablemanagement/fetaures/settings/presentation/screens/settings_dashboard.dart';
 import 'package:quickservtablemanagement/fetaures/tablemanagement/presentation/cubit/table_cubit.dart';
@@ -334,7 +334,9 @@ class _TableHomescreenState extends State<TableHomescreen>
                   controller: _tabController,
                   children: [
                     SizedBox(),
-                    tabContent(filteredTables),
+                    filteredTables.isEmpty
+                        ? const Center(child: Text("No tables available"))
+                        : tabContent(filteredTables),
                     const SizedBox(),
                   ],
                 );
@@ -348,7 +350,9 @@ class _TableHomescreenState extends State<TableHomescreen>
                   children: [
                     const SizedBox(),
                     const SizedBox(),
-                    tabContent(tables),
+                    (tables == null || tables.isEmpty)
+                        ? const Center(child: Text("No running tables"))
+                        : tabContent(tables),
                   ],
                 );
               }
@@ -358,7 +362,9 @@ class _TableHomescreenState extends State<TableHomescreen>
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    tabContent(tables),
+                    (tables == null || tables.isEmpty)
+                        ? const Center(child: Text("No tables found"))
+                        : tabContent(tables),
                     const SizedBox(),
                     const SizedBox(),
                   ],
@@ -529,7 +535,7 @@ class _TableHomescreenState extends State<TableHomescreen>
             Navigator.of(context)
                 .push(
                   MaterialPageRoute(
-                    builder: (_) => OrderDetailsScreen(
+                    builder: (_) => TokenListingScreen(
                       tableId: table.tableId!,
                       orderMasterId: order.orderMasterId!,
                     ),
